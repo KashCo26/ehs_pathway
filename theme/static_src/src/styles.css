@@ -3,6 +3,47 @@
   themes: all;
 }
 
+@plugin "daisyui/theme" {
+  name: "pathway-emerald";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+
+  /* Warm off-white/cream background from the right panel */
+  --color-base-100: oklch(98% 0.01 90);
+  --color-base-200: oklch(94% 0.015 90);
+  --color-base-300: oklch(88% 0.02 90);
+  --color-base-content: oklch(22% 0.04 260);
+
+  /* Emerald Green replaces the original yellow accent color */
+  --color-primary: oklch(60% 0.17 155);
+  --color-primary-content: oklch(99% 0 0);
+
+  /* Dark Navy Blue sampled directly from the sidebar/footer card */
+  --color-neutral: oklch(20% 0.03 255);
+  --color-neutral-content: oklch(95% 0.01 90);
+
+  --color-secondary: oklch(75% 0.05 155);
+  --color-secondary-content: oklch(15% 0.03 155);
+  --color-accent: oklch(60% 0.17 155);
+  --color-accent-content: oklch(99% 0 0);
+
+  --color-info: oklch(60% 0.15 240);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(60% 0.17 155);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(80% 0.15 85);
+  --color-warning-content: oklch(20% 0.05 85);
+  --color-error: oklch(65% 0.2 25);
+  --color-error-content: oklch(100% 0 0);
+
+  /* Soft, rounded borders matching the image layout */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --border: 1px;
+}
+
 /**
   * A catch-all path to Django template files, JavaScript, and Python files
   * that contain Tailwind CSS classes and will be scanned by Tailwind to generate the final CSS file.
