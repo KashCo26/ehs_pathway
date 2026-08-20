@@ -15,7 +15,6 @@
   --color-base-300: oklch(88% 0.02 90);
   --color-base-content: oklch(22% 0.04 260);
 
-  /* Emerald Green replaces the original yellow accent color */
   --color-primary: oklch(60% 0.17 155);
   --color-primary-content: oklch(99% 0 0);
 
