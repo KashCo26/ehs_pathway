@@ -29,6 +29,10 @@
       <option value="English">English</option>
       <option value="Mathematics">Mathematics</option>
       <option value="History">History</option>
+      <option value="Elective">Elective</option>
+      <option value="Art">Art</option>
+      <option value="Physical Education">Physical Education</option>
+      <option value="World Language">World Language</option>
     </select>
   </div>
 
@@ -36,8 +40,10 @@
     {% for course in courses %}
     <div 
       class="course-card bg-base-100 border border-base-300 rounded-2xl shadow-sm overflow-hidden transition-all duration-200"
-      data-title="{{ course.description|default:course.course_name|lower }}"
-      data-number="{{ course.course_number }}"
+      data-name="{{ course.course_name|lower }}"
+      data-title="{{ course.description|lower }}"
+      data-number="{{ course.course_number|lower }}"
+      data-section="{{ course.section }}"
     >
       <div 
         class="p-4 flex items-center justify-between cursor-pointer select-none hover:bg-base-200/50 transition"
@@ -48,7 +54,7 @@
             {{ course.course_name|default:course.description }}
           </h2>
           <p class="text-xs opacity-70 mt-0.5">
-            Course #{{ course.course_number }} &bull; Grade: {{ course.grade_level }} &bull; Length: {{ course.length }}
+            Course #{{ course.course_number }} &bull; Grade: {{ course.grade_level }} &bull; Length: {{ course.length }} &bull; {{ course.section }}
           </p>
         </div>
         
@@ -112,9 +118,13 @@
     </div>
     {% empty %}
     <div class="p-8 text-center opacity-70 bg-base-100 rounded-2xl border border-base-300">
-      No courses found matching your criteria.
+      No courses available.
     </div>
     {% endfor %}
+
+    <div id="noResults" class="hidden p-8 text-center opacity-70 bg-base-100 rounded-2xl border border-base-300">
+      No courses found.
+    </div>
   </div>
 
 </div>
@@ -146,19 +156,38 @@
   }
 
   function filterCourses() {
-    const searchInput = document.getElementById('courseSearch').value.toLowerCase();
+    const searchInput = document.getElementById('courseSearch').value.toLowerCase().trim();
+    const selectedSection = document.getElementById('departmentFilter').value;
     const cards = document.querySelectorAll('.course-card');
+    const noResultsMsg = document.getElementById('noResults');
+    let visibleCount = 0;
 
     cards.forEach(card => {
-      const title = card.getAttribute('data-title') || '';
-      const number = card.getAttribute('data-number') || '';
+      const name = (card.getAttribute('data-name') || '').toLowerCase();
+      const title = (card.getAttribute('data-title') || '').toLowerCase();
+      const number = (card.getAttribute('data-number') || '').toLowerCase();
+      const section = card.getAttribute('data-section') || '';
+
+      const matchesSection = (selectedSection === 'all') || (section.toLowerCase() === selectedSection.toLowerCase());
       
-      if (title.includes(searchInput) || number.includes(searchInput)) {
+      const matchesSearch = searchInput === '' || 
+                            name.includes(searchInput) || 
+                            title.includes(searchInput) || 
+                            number.includes(searchInput);
+
+      if (matchesSection && matchesSearch) {
         card.style.display = 'block';
+        visibleCount++;
       } else {
         card.style.display = 'none';
       }
     });
+
+    if (visibleCount === 0 && cards.length > 0) {
+      noResultsMsg.classList.remove('hidden');
+    } else {
+      noResultsMsg.classList.add('hidden');
+    }
   }
 </script>
 {% endblock %}
