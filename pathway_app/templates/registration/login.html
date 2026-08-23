@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4">
+  <div class="max-w-md w-full bg-base-100 border border-base-300 rounded-2xl shadow-lg p-8">
+    
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold">Welcome Back</h2>
+      <p class="text-sm text-base-content/70 mt-1">
+        Sign in to access your saved graduation plan.
+      </p>
+    </div>
+
+    <form method="POST" action="{% url 'login' %}" class="space-y-4">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="bg-error/10 border border-error/20 text-error text-xs rounded-xl p-3">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-control w-full">
+        <label class="label py-1" for="{{ form.username.id_for_label }}">
+          <span class="label-text text-xs font-semibold">Username</span>
+        </label>
+        <input 
+          type="text" 
+          name="{{ form.username.name }}" 
+          id="{{ form.username.id_for_label }}"
+          class="input input-bordered w-full rounded-xl focus:outline-none focus:border-primary text-sm"
+          required
+        >
+        {% if form.username.errors %}
+          <label class="label py-0.5">
+            <span class="label-text-alt text-error">{{ form.username.errors.0 }}</span>
+          </label>
+        {% endif %}
+      </div>
+
+      <div class="form-control w-full">
+        <label class="label py-1" for="{{ form.password.id_for_label }}">
+          <span class="label-text text-xs font-semibold">Password</span>
+        </label>
+        <input 
+          type="password" 
+          name="{{ form.password.name }}" 
+          id="{{ form.password.id_for_label }}"
+          class="input input-bordered w-full rounded-xl focus:outline-none focus:border-primary text-sm"
+          required
+        >
+        {% if form.password.errors %}
+          <label class="label py-0.5">
+            <span class="label-text-alt text-error">{{ form.password.errors.0 }}</span>
+          </label>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full rounded-xl mt-4 font-bold">
+        Log In
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-xs text-base-content/60">
+      Don't have an account yet? 
+      <a href="{% url 'register' %}" class="link link-primary font-semibold">Sign up</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

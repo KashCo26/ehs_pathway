@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center py-12 px-4">
+  <div class="max-w-md w-full bg-base-100 border border-base-300 rounded-2xl shadow-lg p-8">
+    
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold">Create Your Account</h2>
+      <p class="text-sm text-base-content/70 mt-1">
+        Sign up to save your Dublin USD graduation plan across all your devices.
+      </p>
+    </div>
+
+    <form method="POST" action="{% url 'register' %}" class="space-y-4">
+      {% csrf_token %}
+
+      {% if form.errors %}
+        <div class="bg-error/10 border border-error/20 text-error text-xs rounded-xl p-3">
+          Please correct the errors highlighted below.
+        </div>
+      {% endif %}
+
+      {% for field in form %}
+        <div class="form-control w-full">
+          <label class="label py-1">
+            <span class="label-text text-xs font-semibold">{{ field.label }}</span>
+          </label>
+          <input class="input input-bordered w-full rounded-xl focus:outline-none focus:border-primary text-sm" type="{{ field.type }}" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.value %}value="{{ field.value }}" {% endif %}>
+          {% if field.errors %}
+            <label class="label py-0.5">
+              <span class="label-text-alt text-error">{{ field.errors.0 }}</span>
+            </label>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn btn-primary w-full rounded-xl mt-4 font-bold">
+        Transfer Guest Data & Create Account
+      </button>
+    </form>
+
+    <div class="mt-6 text-center text-xs text-base-content/60">
+      Already have an account? 
+      <a href="{% url 'login' %}" class="link link-primary font-semibold">Log in</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

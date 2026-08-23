@@ -34,6 +34,7 @@ class Command(BaseCommand):
                     'concurrent': row['Concurrent Enrollment Classes'],
                     'AP_honors': row['AP/Honors stat'].strip(),
                     'course_name': row['Course Name'].strip(),
+                    'prerequisite_courses': row['Prerequisite Classes'],
                 }
             )
 

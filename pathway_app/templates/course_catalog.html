@@ -1,7 +1,26 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="min-h-screen bg-base-100 text-base-content px-0 py-4 max-w-2xl mx-auto font-sans">
+<div class="min-h-screen bg-base-100 text-base-content px-0 py-4 max-w-3xl mx-auto font-sans">
+
+  <div id="toastBanner" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 hidden transition-all duration-300 ease-out transform -translate-y-2 opacity-0 pointer-events-none w-[60vw] max-w-[60vw]">
+    <div class="w-full px-4 py-2.5 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-xs font-medium text-white pointer-events-auto backdrop-blur-xl transition-all" style="background-color: rgba(220, 38, 38, 0.85) !important;">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-5 h-5 rounded-full bg-red-500/30 flex items-center justify-center shrink-0">
+          <i class="fas fa-exclamation-triangle text-red-100 text-[10px]"></i>
+        </div>
+        <span id="toastMessage" class="whitespace-normal break-words leading-snug text-white font-normal"></span>
+      </div>
+
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="toastOverrideBtn" class="btn btn-xs bg-white text-red-600 hover:bg-neutral-100 border-none rounded-lg font-semibold px-2.5 py-1 transition-all shadow-sm">
+          Override & Add
+        </button>
+        <button onclick="dismissToast()" class="btn btn-xs btn-ghost btn-circle text-white/80 hover:text-white hover:bg-white/15 border-none">
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </div>
   
   <div class="mb-6">
     <span class="text-xs font-bold uppercase tracking-wider text-primary">BROWSE</span>
@@ -30,7 +49,7 @@
       <option value="Mathematics">Mathematics</option>
       <option value="History">History</option>
       <option value="Elective">Elective</option>
-      <option value="Art">Art</option>
+      <option value="Visual/Performing Arts">Art</option>
       <option value="Physical Education">Physical Education</option>
       <option value="World Language">World Language</option>
     </select>
@@ -59,7 +78,7 @@
         </div>
         
         <div class="flex items-center gap-2">
-          {% if 'AP' in course.description or 'AP' in course.course_name %}
+          {% if 'AP' in course.course_name and 'APD' not in course.course_name %}
             <span class="badge badge-primary text-primary-content text-[10px] font-bold uppercase tracking-wide">AP</span>
           {% elif 'Honors' in course.description or 'Honors' in course.course_name %}
             <span class="badge bg-[#2B6CB0] text-primary-content text-[10px] font-bold uppercase tracking-wide">HONORS</span>
@@ -108,7 +127,7 @@
 
         <div class="mt-4">
           <button 
-            onclick="toggleAdd(this)"
+            onclick="toggleAdd(this, '{{ course.course_number }}')"
             class="add-btn btn btn-neutral btn-outline btn-sm rounded-xl flex items-center gap-1.5 transition shadow-sm text-xs font-semibold"
           >
             <span>Add Course +</span>
@@ -143,16 +162,68 @@
     }
   }
 
-  function toggleAdd(btn) {
-    if (btn.classList.contains('btn-primary')) {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-neutral', 'btn-outline');
-      btn.innerHTML = '<span>Add Course +</span>';
-    } else {
+  function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+  function setButtonState(btn, isAdded) {
+    if (isAdded) {
       btn.classList.remove('btn-neutral', 'btn-outline');
       btn.classList.add('btn-primary');
       btn.innerHTML = '<span>Added</span> <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>';
+    } else {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-neutral', 'btn-outline');
+      btn.innerHTML = '<span>Add Course +</span>';
     }
+  }
+
+  function toggleAdd(btn, courseNumber) {
+    const isAdding = !btn.classList.contains('btn-primary');
+
+    btn.disabled = true;
+
+    fetch('/courses/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({
+        course_number: courseNumber,
+        action: isAdding ? 'add' : 'remove'
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to update course selection');
+      }
+      return response.json();
+    })
+    .then(data => {
+      btn.disabled = false;
+
+      if (data.status === 'success') {
+        setButtonState(btn, isAdding);
+      } else {
+        console.error('Server error:', data.message);
+      }
+    })
+    .catch(error => {
+      btn.disabled = false;
+      console.error('Error:', error);
+    });
   }
 
   function filterCourses() {
@@ -166,10 +237,22 @@
       const name = (card.getAttribute('data-name') || '').toLowerCase();
       const title = (card.getAttribute('data-title') || '').toLowerCase();
       const number = (card.getAttribute('data-number') || '').toLowerCase();
-      const section = card.getAttribute('data-section') || '';
+      const section = (card.getAttribute('data-section') || '').toLowerCase();
 
-      const matchesSection = (selectedSection === 'all') || (section.toLowerCase() === selectedSection.toLowerCase());
-      
+      let matchesSection = false;
+      if (selectedSection === 'all') {
+        matchesSection = true;
+      } else if (selectedSection === 'History') {
+        matchesSection = section.includes('history') || 
+                         section.includes('civics') || 
+                         section.includes('economics');
+      } else if (selectedSection === 'Science') {
+        matchesSection = section.includes('life science') || 
+                         section.includes('physical science');
+      } else {
+        matchesSection = section === selectedSection.toLowerCase();
+      }
+
       const matchesSearch = searchInput === '' || 
                             name.includes(searchInput) || 
                             title.includes(searchInput) || 
@@ -189,5 +272,90 @@
       noResultsMsg.classList.add('hidden');
     }
   }
+  let pendingCourse = null;
+  let toastTimeout = null;
+
+  function setButtonState(btn, isAdded) {
+    if (isAdded) {
+      btn.classList.remove('btn-neutral', 'btn-outline');
+      btn.classList.add('btn-primary');
+      btn.innerHTML = '<span>Added</span> <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>';
+    } else {
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-neutral', 'btn-outline');
+      btn.innerHTML = '<span>Add Course +</span>';
+    }
+  }
+
+  function showToast(message) {
+    const toast = document.getElementById('toastBanner');
+    const msgElem = document.getElementById('toastMessage');
+    
+    msgElem.innerText = message;
+
+    toast.classList.remove('hidden', 'pointer-events-none', '-translate-y-2', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      dismissToast();
+    }, 8000);
+  }
+
+  function dismissToast() {
+    const toast = document.getElementById('toastBanner');
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('-translate-y-2', 'opacity-0', 'pointer-events-none');
+    
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 300);
+  }
+
+  function toggleAdd(btn, courseNumber, override = false) {
+    const isAdding = !btn.classList.contains('btn-primary');
+    btn.disabled = true;
+
+    fetch('/courses/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+      body: JSON.stringify({
+        course_number: courseNumber,
+        action: isAdding ? 'add' : 'remove',
+        override: override
+      })
+    })
+    .then(async (response) => {
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update course selection');
+      }
+      return data;
+    })
+    .then(data => {
+      btn.disabled = false;
+      if (data.status === 'success') {
+        setButtonState(btn, isAdding);
+        dismissToast();
+      }
+    })
+    .catch(error => {
+      btn.disabled = false;
+      
+      pendingCourse = { btn, courseNumber };
+      
+      showToast(error.message);
+    });
+  }
+
+  document.getElementById('toastOverrideBtn').addEventListener('click', () => {
+    if (pendingCourse) {
+      toggleAdd(pendingCourse.btn, pendingCourse.courseNumber, true);
+    }
+  });
+  
 </script>
 {% endblock %}
