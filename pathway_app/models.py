@@ -47,10 +47,14 @@ class StudentProfile(models.Model):
         courses_detail = []
 
         student_courses = StudentCourse.objects.filter(student=self).select_related('course')
+        ap_honors = 0
 
         for sc in student_courses:
             course = sc.course
             sec = (course.section or 'ELECTIVE').strip().upper()
+            
+            if 'AP' in course.AP_honors or 'Honors' in course.AP_honors:
+                ap_honors += 1
             
             try:
                 val = float(course.credits)
@@ -93,7 +97,8 @@ class StudentProfile(models.Model):
             'total_earned': total_earned,
             'total_required': 220.0,
             'is_grad_eligible': total_earned >= 220.0,
-            'completed_courses': courses_detail
+            'completed_courses': courses_detail,
+            'total_ap_honors': ap_honors
         }
 
 
@@ -107,8 +112,10 @@ class StudentCourse(models.Model):
 
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    grade_level = models.IntegerField(choices=GRADE_LEVEL_CHOICES, default=9)
+    grade_level = models.IntegerField(choices=GRADE_LEVEL_CHOICES, default=9, null=True)
     semesters = models.CharField(max_length=10, blank=True, null=True, default='1')
+    is_pre_hs = models.BooleanField(null=True, default=False)
+    is_summer = models.BooleanField(null=True, default=False)
 
     class Meta:
         unique_together = ('student', 'course')

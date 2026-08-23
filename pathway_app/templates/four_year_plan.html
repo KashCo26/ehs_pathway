@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-8 bg-[#FAF8F3] min-h-screen text-[#2D3748]">
+  
+  <div class="mb-6">
+    <span class="text-[11px] font-extrabold uppercase tracking-widest text-[#8A7B6C]">LEDGER</span>
+    <h1 class="text-3xl font-serif font-bold text-[#1A202C] mt-0.5">4-year plan</h1>
+    <p class="text-xs text-[#718096] mt-1">Your course load by year and semester. Drag and drop courses to move them across semesters or grades.</p>
+  </div>
+
+  <!-- Pre-HS Drop Zone -->
+  <div class="mb-6 p-4 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]"
+       ondragover="handleDragOver(event)"
+       ondragleave="handleDragLeave(event)"
+       ondrop="handleDrop(event, 8, '1,2', false, true)">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider text-[#1A202C]">Pre-High School Credits</span>
+        <span class="text-[11px] text-[#718096]">Taken in Middle School</span>
+      </div>
+      <button onclick="openAddModal(8, '1,2', false, true, 'Pre-High School')" class="btn btn-xs bg-[#E5E0D8] text-[#2D3748] hover:bg-[#DCD6CB] border-none rounded-xl font-bold px-3">
+        + Add Pre-HS Course
+      </button>
+    </div>
+
+    <div class="flex flex-wrap gap-2 min-h-[40px] transition-colors duration-150 rounded-xl">
+      {% for sc in pre_hs_courses %}
+      <div draggable="true"
+           ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] shadow-sm cursor-grab active:cursor-grabbing hover:opacity-80 transition">
+        <span>⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
+        <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold ml-1 text-sm">×</button>
+      </div>
+      {% empty %}
+      <div onclick="openAddModal(8, '1,2', false, true, 'Pre-High School')" class="w-full p-3 border border-dashed border-[#D6CEC2] rounded-xl text-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
+        <span class="text-xs text-[#A0AEC0] font-medium">+ Click or drag a course here to add pre-high school credits</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="overflow-x-auto pb-4">
+    <div class="grid grid-cols-4 gap-4 min-w-[1000px]">
+      {% for yr in years %}
+      <div class="grid grid-cols-12 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] overflow-hidden shadow-sm">
+        
+        <div class="col-span-7 p-3 border-r border-[#E2DDD5] flex flex-col justify-between">
+          <div>
+            <div class="bg-[#E5E0D8] text-center font-bold text-xs text-[#1A202C] py-2 px-1 rounded-xl mb-3">
+              {{ yr.label }}
+            </div>
+
+            <!-- Fall Drop Zone -->
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Fall</span>
+                <button onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
+              </div>
+              
+              <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
+                   ondragover="handleDragOver(event)"
+                   ondragleave="handleDragLeave(event)"
+                   ondrop="handleDrop(event, {{ yr.grade }}, '1', false, false)">
+                {% for sc in yr.fall %}
+                <div draggable="true"
+                     ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                     class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
+                  <span class="truncate pr-1">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
+                  <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
+                </div>
+                {% empty %}
+                <div onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
+                  <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Fall Course</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Spring Drop Zone -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Spring</span>
+                <button onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
+              </div>
+
+              <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
+                   ondragover="handleDragOver(event)"
+                   ondragleave="handleDragLeave(event)"
+                   ondrop="handleDrop(event, {{ yr.grade }}, '2', false, false)">
+                {% for sc in yr.spring %}
+                <div draggable="true"
+                     ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                     class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
+                  <span class="truncate pr-1">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
+                  <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
+                </div>
+                {% empty %}
+                <div onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
+                  <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Spring Course</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summer Drop Zone -->
+        <div class="col-span-5 p-2.5 bg-[#E8E3DA] flex flex-col justify-between">
+          <div>
+            <div class="bg-[#DFD9CD] text-center font-bold text-[11px] text-[#718096] py-1.5 rounded-xl mb-2 tracking-wider">
+              SUMMER
+            </div>
+
+            <div class="space-y-1.5 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
+                 ondragover="handleDragOver(event)"
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(event, {{ yr.grade }}, '1,2', true, false)">
+              {% for sc in yr.summer %}
+              <div draggable="true"
+                   ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                   class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
+                <span class="truncate text-[11px]">⋮⋮ {{ sc.course.course_name }}</span>
+                <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-xs">×</button>
+              </div>
+              {% endfor %}
+            </div>
+
+            <button onclick="openAddModal({{ yr.grade }}, '1,2', true, false, 'Grade {{ yr.grade }} - Summer')" class="w-full mt-2 py-1.5 text-[11px] font-bold text-[#718096] bg-[#DFD9CD] hover:bg-[#D5CEBF] rounded-xl transition text-center">
+              + Add
+            </button>
+          </div>
+
+          <p class="text-[9px] text-[#A0AEC0] text-center leading-tight mt-3 font-medium">
+            Max 4 summer courses count toward transcript
+          </p>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-6 bg-[#1A2638] text-white px-8 py-6 rounded-3xl flex items-center justify-between shadow-2xl">
+    <div class="flex items-center gap-14">
+      <div>
+        <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_earned|floatformat:1 }}</div>
+        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Credits Earned</div>
+      </div>
+      <div>
+        <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_required|floatformat:1 }}</div>
+        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Required to Graduate</div>
+      </div>
+      <div>
+        <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_remaining|floatformat:1 }}</div>
+        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Remaining</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="w-14 h-14 rounded-full border-2 border-[#D97706] flex flex-col items-center justify-center text-[#FBBF24]">
+        <span class="text-xs font-bold leading-none">{{ ap_honors_total }}</span>
+        <span class="text-[7px] font-extrabold uppercase tracking-tight mt-0.5 opacity-90">Total AP</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<dialog id="addCourseModal" class="modal">
+  <div class="modal-box bg-[#FAF8F3] text-[#2D3748] rounded-3xl border border-[#E2DDD5] max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-serif font-bold text-lg text-[#1A202C]" id="modalTargetTitle">Add Course</h3>
+        <p class="text-xs text-[#718096]">Search catalog by course name or number</p>
+      </div>
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost text-[#718096]">✕</button>
+      </form>
+    </div>
+
+    <div id="modalErrorMessage" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-medium space-y-2">
+      <div id="modalErrorText"></div>
+      <div id="modalOverrideContainer" class="pt-1"></div>
+    </div>
+
+    <div id="modalCatalogSection">
+      <div class="relative mb-4">
+        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#A0AEC0]"></i>
+        <input 
+          type="text" 
+          id="courseSearchInput" 
+          oninput="filterCourses()" 
+          placeholder="Type course name (e.g., Algebra, AP Biology)..." 
+          class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] text-xs font-medium focus:outline-none focus:border-[#1A202C]">
+      </div>
+
+      <div id="courseResultsList" class="max-h-64 overflow-y-auto space-y-2 pr-1">
+        {% for course in all_courses %}
+        <div 
+          data-name="{{ course.course_name|lower }}" 
+          data-number="{{ course.course_number|lower }}"
+          onclick="submitAddCourse('{{ course.course_number }}')" 
+          class="course-item p-3 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] hover:bg-[#E5E0D8] cursor-pointer transition flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-[#1A202C]">{{ course.course_name }}</div>
+            <div class="text-[10px] text-[#718096] font-mono">#{{ course.course_number }} • {{ course.credits|default:"5.0" }} credits</div>
+          </div>
+          <span class="text-xs font-bold text-[#8A7B6C]">+ Select</span>
+        </div>
+        {% empty %}
+        <p class="text-xs text-center text-[#A0AEC0] py-6">No courses available in catalog.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+    let currentModalIsPreHs = false;
+    let currentTargetGrade = null;
+    let currentTargetSemesters = null;
+    let currentTargetIsSummer = false;
+
+    function openAddModal(grade, semesters, isSummer, isPreHs, label) {
+        currentModalIsPreHs = isPreHs;
+        currentTargetGrade = grade;
+        currentTargetSemesters = semesters;
+        currentTargetIsSummer = isSummer;
+
+        document.getElementById('modalTargetTitle').innerText = 'Add Course to ' + label;
+        document.getElementById('courseSearchInput').value = '';
+        document.getElementById('modalCatalogSection').classList.remove('hidden');
+
+        const errBox = document.getElementById('modalErrorMessage');
+        document.getElementById('modalErrorText').innerText = '';
+        document.getElementById('modalOverrideContainer').innerHTML = '';
+        errBox.classList.add('hidden');
+
+        filterCourses();
+        document.getElementById('addCourseModal').showModal();
+    }
+
+    function showMoveErrorModal(message, courseNumber, grade, semesters, isSummer, isPreHs) {
+        currentModalIsPreHs = isPreHs;
+        currentTargetGrade = grade;
+        currentTargetSemesters = semesters;
+        currentTargetIsSummer = isSummer;
+
+        document.getElementById('modalTargetTitle').innerText = 'Cannot Move Course';
+        document.getElementById('modalCatalogSection').classList.add('hidden');
+
+        const errBox = document.getElementById('modalErrorMessage');
+        const errText = document.getElementById('modalErrorText');
+        const overrideContainer = document.getElementById('modalOverrideContainer');
+
+        errText.innerText = message;
+        overrideContainer.innerHTML = `
+            <button 
+                type="button" 
+                onclick="submitAddCourse('${courseNumber}', true)" 
+                class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white font-bold rounded-lg text-xs shadow transition">
+                Override & Move Anyway
+            </button>
+        `;
+
+        errBox.classList.remove('hidden');
+        document.getElementById('addCourseModal').showModal();
+    }
+
+    function submitAddCourse(courseNumber, override = false) {
+        const errBox = document.getElementById('modalErrorMessage');
+        const errText = document.getElementById('modalErrorText');
+        const overrideContainer = document.getElementById('modalOverrideContainer');
+
+        errBox.classList.add('hidden');
+        overrideContainer.innerHTML = '';
+
+        const actionType = currentModalIsPreHs ? 'pre-hs' : 'add';
+
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                course_number: courseNumber,
+                action: actionType,
+                override: override,
+                grade_level: currentTargetGrade,
+                semesters: currentTargetSemesters,
+                is_summer: currentTargetIsSummer
+            })
+        })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(res => {
+            if (res.status === 200 && res.body.status === 'success') {
+                window.location.reload();
+            } else {
+                const msg = res.body.message || 'Error updating course position.';
+                errText.innerText = msg;
+                
+                overrideContainer.innerHTML = `
+                    <button 
+                        type="button" 
+                        onclick="submitAddCourse('${courseNumber}', true)" 
+                        class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white font-bold rounded-lg text-xs shadow transition">
+                        Override & Add Anyway
+                    </button>
+                `;
+                
+                errBox.classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            errText.innerText = 'Network error. Please try again.';
+            errBox.classList.remove('hidden');
+        });
+    }
+
+    /* DRAG AND DROP HANDLERS */
+    function handleDragStart(e, courseNumber) {
+        e.dataTransfer.setData('text/plain', courseNumber);
+        e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('bg-[#E5E0D8]/60');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('bg-[#E5E0D8]/60');
+    }
+
+    function handleDrop(e, grade, semesters, isSummer, isPreHs) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('bg-[#E5E0D8]/60');
+
+        const courseNumber = e.dataTransfer.getData('text/plain');
+        if (!courseNumber) return;
+
+        const actionType = isPreHs ? 'pre-hs' : 'add';
+
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                course_number: courseNumber,
+                action: actionType,
+                grade_level: grade,
+                semesters: semesters,
+                is_summer: isSummer
+            })
+        })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(res => {
+            if (res.status === 200 && res.body.status === 'success') {
+                window.location.reload();
+            } else {
+                showMoveErrorModal(
+                    res.body.message || 'Cannot move course to this slot.', 
+                    courseNumber, 
+                    grade, 
+                    semesters, 
+                    isSummer, 
+                    isPreHs
+                );
+            }
+        })
+        .catch(() => alert('Network error moving course.'));
+    }
+
+    function filterCourses() {
+        const query = document.getElementById('courseSearchInput').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.course-item');
+
+        items.forEach(item => {
+            const name = item.getAttribute('data-name') || '';
+            const num = item.getAttribute('data-number') || '';
+            if (name.includes(query) || num.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function removeCourse(courseNumber, actionName = 'remove') {
+        fetch(window.location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                course_number: courseNumber,
+                action: actionName
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        });
+    }
+</script>
+{% endblock %}
