@@ -46,14 +46,14 @@ class StudentProfile(models.Model):
         earned_credits = {key: 0.0 for key in requirements.keys()}
         courses_detail = []
 
-        student_courses = StudentCourse.objects.filter(student=self).select_related('course')
+        student_courses = StudentCourse.objects.filter(student=self, grade_level__gt = 8).select_related('course')
         ap_honors = 0
 
         for sc in student_courses:
             course = sc.course
             sec = (course.section or 'ELECTIVE').strip().upper()
             
-            if 'AP' in course.AP_honors or 'Honors' in course.AP_honors:
+            if course.AP_honors == "Yes":
                 ap_honors += 1
             
             try:
@@ -95,8 +95,8 @@ class StudentProfile(models.Model):
                 for cat, req in requirements.items()
             },
             'total_earned': total_earned,
-            'total_required': 220.0,
-            'is_grad_eligible': total_earned >= 220.0,
+            'total_required': 230.0,
+            'is_grad_eligible': total_earned >= 230.0,
             'completed_courses': courses_detail,
             'total_ap_honors': ap_honors
         }

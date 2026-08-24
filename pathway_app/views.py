@@ -25,13 +25,23 @@ def login_view(request):
 @require_POST
 def logout_view(request):
     logout(request)
-    return JsonResponse({'status': 'success'})
+    next_url = request.META.get('HTTP_REFERER', 'dashboard')
+    return redirect(next_url)
+
+# views.py
+from .forms import StudentRegistrationForm  # Add this import
 
 def register(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = StudentRegistrationForm(request.POST)
         if form.is_valid():
             new_user = form.save()
+            grad_year = form.cleaned_data.get('graduation_year')
+            
+            # Save graduation year to StudentProfile
+            user_profile, _ = StudentProfile.objects.get_or_create(user=new_user)
+            user_profile.graduation_year = grad_year
+            user_profile.save()
             
             session_key = request.session.session_key
             if session_key:
@@ -40,8 +50,7 @@ def register(request):
                     guest_user = User.objects.get(username=guest_username)
                     guest_profile = StudentProfile.objects.get(user=guest_user)
                     
-                    user_profile, _ = StudentProfile.objects.get_or_create(user=new_user)
-                    
+                    # Transfer guest courses to the registered user profile
                     StudentCourse.objects.filter(student=guest_profile).update(student=user_profile)
                     
                     guest_profile.delete()
@@ -52,7 +61,7 @@ def register(request):
             login(request, new_user)
             return redirect('courses')
     else:
-        form = UserCreationForm()
+        form = StudentRegistrationForm()
         
     return render(request, 'registration/register.html', {'form': form})
 
@@ -114,7 +123,7 @@ def toggle_course(request):
                             missing_ors.append(req_course.course_name)
                         return JsonResponse({
                             'status': 'error',
-                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of {', '.join(course for course in missing_ors)}."
+                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of these courses: {', '.join(course for course in missing_ors)}."
                         }, status=400)
 
                 missing_and = [num for num in and_numbers if num not in check_courses]
@@ -197,7 +206,7 @@ def toggle_course(request):
                 student_course.grade_level = assigned_grade
                 student_course.semesters = assigned_semesters
                 student_course.is_summer = assigned_is_summer
-                student_course.is_pre_hs = False  # Reset pre-HS flag when moving to standard grade
+                student_course.is_pre_hs = False
                 student_course.save()
 
         elif action == 'remove':
@@ -218,7 +227,7 @@ def toggle_course(request):
             if not created:
                 student_course.grade_level = 8
                 student_course.semesters = None
-                student_course.is_summer = False  # Reset summer flag when moving to Pre-HS
+                student_course.is_summer = False
                 student_course.is_pre_hs = True
                 student_course.save()
 
@@ -233,11 +242,6 @@ def toggle_course(request):
         return JsonResponse({'status': 'error', 'message': 'Course not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
-def home_screen(request):
-    student_profile = get_or_create_guest_profile(request)
-    grad_year = student_profile.graduation_year or 2028
-    return render(request, 'base.html', {'grad_year': str(grad_year)})
 
 
 def courses(request):

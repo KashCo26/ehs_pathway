@@ -12,7 +12,7 @@
 
     <nav class="w-64 h-screen fixed top-0 left-0 z-50 bg-neutral text-neutral-content p-6 flex flex-col justify-between border-r border-neutral-content/10">
         <div class="space-y-8">
-            <a href="{% url 'home' %}" class="block text-2xl font-serif font-bold tracking-tight">
+            <a href="{% url 'four_year_plan' %}" class="block text-2xl font-serif font-bold tracking-tight">
                 Path<span class="text-primary">way</span>
             </a>
 
@@ -23,7 +23,7 @@
                 </a>
 
                 <a href="{% url 'four_year_plan' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'four_year_plan' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full bg-neutral-content/40"></span>
+                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'four_year_plan' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
                     4-year plan
                 </a>
 
@@ -56,7 +56,7 @@
                     </span>
                     <form method="POST" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-ghost btn-sm">
+                        <button type="submit" class="btn btn-info btn-sm">
                             Logout
                         </button>
                     </form>
