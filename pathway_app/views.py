@@ -98,6 +98,7 @@ def toggle_course(request):
 
         if action == 'add':
             prerecs = course.prerequisite_courses or ""
+            concurs = course.concurrent or ""
             
             if prerecs.strip() and not override:
                 completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
@@ -123,7 +124,7 @@ def toggle_course(request):
                             missing_ors.append(req_course.course_name)
                         return JsonResponse({
                             'status': 'error',
-                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of these courses: {', '.join(course for course in missing_ors)}."
+                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of the following courses: {', '.join(course for course in missing_ors)}."
                         }, status=400)
 
                 missing_and = [num for num in and_numbers if num not in check_courses]
@@ -137,7 +138,56 @@ def toggle_course(request):
                         'status': 'error',
                         'message': f"Cannot add {course.course_name or course_number}. Missing prerequisite course(s): {', '.join(missing_and_names)}"
                     }, status=400)
+                    
+            if concurs.strip() and not override:
+                completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
+                planned_nums = set(str(n) for n in StudentCourse.objects.filter(student=profile).values_list('course__course_number', flat=True))
+                all_student_courses = completed_nums.union(planned_nums)
 
+                if target_grade:
+                    pre_check_courses = set(
+                        str(n) for n in existing_student_courses.filter(
+                            grade_level__in=range(8, target_grade)
+                        ).values_list('course__course_number', flat=True)
+                    )
+                    # Courses scheduled concurrently in target grade
+                    concurrent_courses = set(
+                        str(n) for n in existing_student_courses.filter(
+                            grade_level=target_grade
+                        ).values_list('course__course_number', flat=True)
+                    )
+                else:
+                    pre_check_courses = all_student_courses
+                    concurrent_courses = set()
+
+                raw_or_concurs = re.findall(r"\(([^)]+)\)", concurs)
+                concur_ors = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_concurs if re.findall(r"\b\d{5,8}\b", g)]
+                concur_without_parens = re.sub(r"\([^)]+\)", "", concurs)
+                concur_ands = re.findall(r"\b\d{5,8}\b", concur_without_parens)
+                
+                for group in concur_ors:
+                    has_satisfied_req = any(
+                        (num in pre_check_courses) or (num in concurrent_courses)
+                        for num in group
+                    )
+                    if not has_satisfied_req:
+                        missing_ors = [get_object_or_404(Course, course_number=num).course_name for num in group]
+                        return JsonResponse({
+                            'status': 'error',
+                            'message': f"Cannot add {course.course_name or course_number}. You must have completed or concurrently enroll in at least one of these courses: {', '.join(missing_ors)}."
+                        }, status=400)
+
+                missing_concur_and = [
+                    num for num in concur_ands 
+                    if num not in pre_check_courses and num not in concurrent_courses
+                ]
+                if missing_concur_and:
+                    missing_and_names = [get_object_or_404(Course, course_number=num).course_name for num in missing_concur_and]
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"Cannot add {course.course_name or course_number}. Requires completion or concurrent enrollment in: {', '.join(missing_and_names)}"
+                    }, status=400)
+                
             course_credits = float(course.credits or "5")
             assigned_grade = None
             assigned_semesters = None

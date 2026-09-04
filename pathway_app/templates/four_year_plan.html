@@ -4,12 +4,11 @@
 <div class="p-8 bg-[#FAF8F3] min-h-screen text-[#2D3748]">
   
   <div class="mb-6">
-    <span class="text-[11px] font-extrabold uppercase tracking-widest text-[#8A7B6C]">LEDGER</span>
+    <span class="text-[11px] font-extrabold uppercase tracking-widest text-primary">LEDGER</span>
     <h1 class="text-3xl font-serif font-bold text-[#1A202C] mt-0.5">4-year plan</h1>
     <p class="text-xs text-[#718096] mt-1">Your course load by year and semester. Drag and drop courses to move them across semesters or grades.</p>
   </div>
 
-  <!-- Pre-HS Drop Zone -->
   <div class="mb-6 p-4 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] flex flex-col justify-between min-h-[110px]"
        ondragover="handleDragOver(event)"
        ondragleave="handleDragLeave(event)"
@@ -42,7 +41,6 @@
       </div>
     </div>
 
-    <!-- Note locked to bottom right -->
     <div class="flex justify-end mt-3">
       <p class="text-[10px] font-semibold text-[#8A7B6C] tracking-wide m-0">
         *NOTE: These classes do not count for high school graduation credits.
@@ -62,7 +60,6 @@
               {{ yr.label }}
             </div>
 
-            <!-- Fall Drop Zone -->
             <div class="mb-4">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Fall</span>
@@ -88,7 +85,6 @@
               </div>
             </div>
 
-            <!-- Spring Drop Zone -->
             <div>
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Spring</span>
@@ -116,7 +112,6 @@
           </div>
         </div>
 
-        <!-- Summer Drop Zone -->
         <div class="col-span-5 p-2.5 bg-[#E8E3DA] flex flex-col justify-between">
           <div>
             <div class="bg-[#DFD9CD] text-center font-bold text-[11px] text-[#718096] py-1.5 rounded-xl mb-2 tracking-wider">
@@ -168,7 +163,7 @@
       </div>
     </div>
     <div class="flex items-center gap-6">
-      <div class="w-14 h-14 rounded-full border-2 border-[#D97706] flex flex-col items-center justify-center text-[#FBBF24]">
+      <div class="w-14 h-14 rounded-full border-2 border-primary flex flex-col items-center justify-center text-primary">
         <span class="text-xs font-bold leading-none">{{ ap_honors_total }}</span>
         <span class="text-[7px] font-extrabold uppercase tracking-tight mt-0.5 opacity-90">Total APs</span>
       </div>
