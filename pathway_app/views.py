@@ -28,8 +28,7 @@ def logout_view(request):
     next_url = request.META.get('HTTP_REFERER', 'dashboard')
     return redirect(next_url)
 
-# views.py
-from .forms import StudentRegistrationForm  # Add this import
+from .forms import StudentRegistrationForm
 
 def register(request):
     if request.method == 'POST':
@@ -38,7 +37,6 @@ def register(request):
             new_user = form.save()
             grad_year = form.cleaned_data.get('graduation_year')
             
-            # Save graduation year to StudentProfile
             user_profile, _ = StudentProfile.objects.get_or_create(user=new_user)
             user_profile.graduation_year = grad_year
             user_profile.save()
@@ -50,7 +48,6 @@ def register(request):
                     guest_user = User.objects.get(username=guest_username)
                     guest_profile = StudentProfile.objects.get(user=guest_user)
                     
-                    # Transfer guest courses to the registered user profile
                     StudentCourse.objects.filter(student=guest_profile).update(student=user_profile)
                     
                     guest_profile.delete()
@@ -104,41 +101,46 @@ def toggle_course(request):
                 completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
                 planned_nums = set(str(n) for n in StudentCourse.objects.filter(student=profile).values_list('course__course_number', flat=True))
                 all_student_courses = completed_nums.union(planned_nums)
-                
+
                 if target_grade:
-                    allowed_grades = range(8, target_grade)
-                    pre_check_courses = existing_student_courses.filter(grade_level__in=allowed_grades)
-                
+                    allowed_grades = range(8, int(target_grade))
+                    pre_check_courses = set(
+                        str(n) for n in existing_student_courses.filter(
+                            grade_level__in=allowed_grades
+                        ).values_list('course__course_number', flat=True)
+                    )
+                    check_courses = pre_check_courses.union(completed_nums)
+                else:
+                    check_courses = all_student_courses
+
                 raw_or_groups = re.findall(r"\(([^)]+)\)", prerecs)
                 or_groups = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_groups if re.findall(r"\b\d{5,8}\b", g)]
 
-                string_without_parens = re.sub(r"\([^)]+\)", "", prerecs)
-                and_numbers = re.findall(r"\b\d{5,8}\b", string_without_parens)
-                check_courses = pre_check_courses if target_grade else all_student_courses
-                
                 for group in or_groups:
-                    if not any(num in check_courses for num in group):
+                    if not any(str(num) in check_courses for num in group):
                         missing_ors = []
                         for num in group:
-                            req_course = get_object_or_404(Course, course_number=num)
-                            missing_ors.append(req_course.course_name)
+                            req_course = Course.objects.filter(course_number=num).first()
+                            missing_ors.append(req_course.course_name if req_course else str(num))
                         return JsonResponse({
                             'status': 'error',
-                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of the following courses: {', '.join(course for course in missing_ors)}."
+                            'message': f"Cannot add {course.course_name or course_number}. You need to have taken at least one of the following courses: {', '.join(missing_ors)}."
                         }, status=400)
 
-                missing_and = [num for num in and_numbers if num not in check_courses]
+                string_without_parens = re.sub(r"\([^)]+\)", "", prerecs)
+                and_numbers = re.findall(r"\b\d{5,8}\b", string_without_parens)
+
+                missing_and = [num for num in and_numbers if str(num) not in check_courses]
                 if missing_and:
                     missing_and_names = []
                     for num in missing_and:
-                        req_course = get_object_or_404(Course, course_number=num)
-                        missing_and_names.append(req_course.course_name)
+                        req_course = Course.objects.filter(course_number=num).first()
+                        missing_and_names.append(req_course.course_name if req_course else str(num))
                     
                     return JsonResponse({
                         'status': 'error',
                         'message': f"Cannot add {course.course_name or course_number}. Missing prerequisite course(s): {', '.join(missing_and_names)}"
-                    }, status=400)
-                    
+                    }, status=400)       
             if concurs.strip() and not override:
                 completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
                 planned_nums = set(str(n) for n in StudentCourse.objects.filter(student=profile).values_list('course__course_number', flat=True))
@@ -150,7 +152,6 @@ def toggle_course(request):
                             grade_level__in=range(8, target_grade)
                         ).values_list('course__course_number', flat=True)
                     )
-                    # Courses scheduled concurrently in target grade
                     concurrent_courses = set(
                         str(n) for n in existing_student_courses.filter(
                             grade_level=target_grade
