@@ -26,6 +26,7 @@ class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     graduation_year = models.IntegerField(default=datetime.now().year + 4)
     completed_courses = models.ManyToManyField(Course, through='StudentCourse', blank=True)
+    sports_grades = models.JSONField(default=list, blank=True)
 
     def get_credit_summary(self):
         requirements = {
@@ -87,8 +88,21 @@ class StudentProfile(models.Model):
             else:
                 earned_credits['ELECTIVE'] += val
                 course_nums['ELECTIVE'].append(course.course_number)
+                
 
-        total_earned = sum(earned_credits.values())
+        for sport_entry in self.sports_grades or []:
+            if isinstance(sport_entry, dict) and sport_entry.get('has_sport', False):
+                grade = sport_entry.get('grade_level')
+                season = sport_entry.get('season', 'sport')
+                
+                earned_credits['PHYSICAL EDUCATION'] += 5
+                course_nums['PHYSICAL EDUCATION'].append(f"SPORTS_{grade}_{season.upper()}")
+
+        minimized_credits = {cat: min(earned_credits[cat], req) for cat, req in requirements.items()}
+        raw_total_earned = sum(minimized_credits.values())
+        total_required = 230.0
+
+        total_earned = min(raw_total_earned, total_required)
 
         return {
             'categories': {
@@ -101,8 +115,8 @@ class StudentProfile(models.Model):
                 for cat, req in requirements.items()
             },
             'total_earned': total_earned,
-            'total_required': 230.0,
-            'is_grad_eligible': total_earned >= 230.0,
+            'total_required': total_required,
+            'is_grad_eligible': raw_total_earned >= total_required,
             'completed_courses': courses_detail,
             'total_ap_honors': ap_honors
         }
