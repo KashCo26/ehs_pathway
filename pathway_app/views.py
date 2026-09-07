@@ -438,6 +438,7 @@ def credits_summary(request):
         earned = data['earned']
         required = data['required']
         course_nums = data.get('course_nums', [])
+        recommended = data['recommended']
         
         courses = Course.objects.filter(course_number__in=course_nums)
         
@@ -454,6 +455,7 @@ def credits_summary(request):
             'is_complete': data['complete'],
             'percent_complete': round(percent, 1),
             'course_names': course_list,
+            'recommended': recommended
         })
 
     context = {
@@ -471,3 +473,46 @@ def credits_summary(request):
     }
     
     return render(request, 'credits.html', context)
+
+def a_to_g_credits_summary(request):
+    profile = get_or_create_guest_profile(request)
+    summary = profile.get_a_to_g_summary()
+    grad_year = profile.graduation_year
+
+    categories_list = []
+    
+    for cat_name, data in summary['categories'].items():
+        earned = data['earned']
+        required = data['required']
+        course_nums = data.get('course_nums', [])
+        recommended = data['recommended']
+        
+        courses = Course.objects.filter(course_number__in=course_nums)
+        
+        course_list = [c.course_name or c.course_number for c in courses]
+        
+        percent = (earned / required * 100) if required > 0 else 0
+        percent = min(percent, 100.0)
+
+        categories_list.append({
+            'name': cat_name.title().upper(),
+            'earned': earned,
+            'required': required,
+            'remaining': max(0.0, required - earned),
+            'is_complete': data['complete'],
+            'percent_complete': round(percent, 1),
+            'course_names': course_list,
+            'recommended': recommended
+        })
+
+    context = {
+        'credits_earned': summary['total_earned'],
+        'credits_required': summary['total_required'],
+        'credits_remaining': max(0.0, summary['total_required'] - summary['total_earned']),
+        'is_a_to_g_eligible': summary['is_a_to_g_eligible'],
+        'categories': categories_list,
+        'total_ap_honors': summary['total_ap_honors'],
+        'grad_year': grad_year
+    }
+    
+    return render(request, 'a_to_g_credits.html', context)

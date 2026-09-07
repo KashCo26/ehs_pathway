@@ -43,6 +43,20 @@ class StudentProfile(models.Model):
             'VISUAL/PERFORMING ARTS': 10.0,
             'ELECTIVE': 65.0,
         }
+        recommended = {
+            'WORLD HISTORY': "1 year required",
+            "US HISTORY": "1 year required",
+            'CIVICS/ECONOMICS': "1 year required",
+            'ENGLISH': "4 years required",
+            'MATH': "2 years required",
+            'WORLD LANGUAGE': "2 years required",
+            'LIFE SCIENCE': "1 year required",
+            'PHYSICAL SCIENCE': "1 year required",
+            'PHYSICAL EDUCATION': "2 years required",
+            'HEALTH': "1 year required",
+            'VISUAL/PERFORMING ARTS': "1 year required",
+            'ELECTIVE': "6 years of elective courses as well as 5 extra credits from Contemporary Health required",
+        }
 
         earned_credits = {key: 0.0 for key in requirements.keys()}
         course_nums = {key: [] for key in requirements.keys()}
@@ -82,6 +96,7 @@ class StudentProfile(models.Model):
                         earned_credits[sec] = requirements[sec]
                         earned_credits['ELECTIVE'] += overflow
                         course_nums['ELECTIVE'].append(course.course_number)
+                        course_nums[sec].append(course.course_number)
                     else:
                         earned_credits['ELECTIVE'] += val
                         course_nums['ELECTIVE'].append(course.course_number)
@@ -110,13 +125,120 @@ class StudentProfile(models.Model):
                     'earned': earned_credits[cat],
                     'required': req,
                     'complete': earned_credits[cat] >= req,
-                    'course_nums': course_nums[cat]
+                    'course_nums': course_nums[cat],
+                    'recommended': recommended[cat] if cat in recommended else ""
                 }
                 for cat, req in requirements.items()
             },
             'total_earned': total_earned,
             'total_required': total_required,
             'is_grad_eligible': raw_total_earned >= total_required,
+            'completed_courses': courses_detail,
+            'total_ap_honors': ap_honors
+        }
+        
+    def get_a_to_g_summary(self):
+        requirements = {
+            'A. HISTORY/SOCIAL SCIENCE': 20.0,
+            'B. ENGLISH': 40.0,
+            'C. MATH': 30.0,
+            'D. LABORATORY SCIENCE': 20.0,
+            'E. LANGUAGE OTHER THAN ENGLISH': 20.0,
+            'F. VISUAL AND PERFORMING ARTS': 10.0,
+            'G. COLLEGE PREPARATORY ELECTIVE': 10.0,
+        }
+        
+        recommended = {
+            'A. HISTORY/SOCIAL SCIENCE': "2 years required",
+            'B. ENGLISH': "4 years required",
+            'C. MATH': "3 years required, 4 years strongly recommended",
+            'E. LANGUAGE OTHER THAN ENGLISH': "3 years strongly recommended",
+            'D. LABORATORY SCIENCE': "2 years required, 3 years strongly recommended",
+            'F. VISUAL AND PERFORMING ARTS': "1 year required",
+            'G. COLLEGE PREPARATORY ELECTIVE': "1 year required",
+        }
+
+        earned_credits = {key: 0.0 for key in requirements.keys()}
+        course_nums = {key: [] for key in requirements.keys()}
+        courses_detail = []
+
+        student_courses = StudentCourse.objects.filter(student=self, grade_level__gt = 8).select_related('course')
+        ap_honors = 0
+
+        for sc in student_courses:
+            course = sc.course
+            sec = (course.section or 'ELECTIVE').strip().upper()
+            if sec == 'US HISTORY' or sec == 'CIVICS/ECONOMICS' or sec == 'WORLD HISTORY':
+                sec = 'A. HISTORY/SOCIAL SCIENCE'
+            elif sec == 'LIFE SCIENCE' or sec == 'PHYSICAL SCIENCE':
+                sec = 'D. LABORATORY SCIENCE'
+            elif sec == 'MATH':
+                sec = 'C. MATH'
+            elif sec == 'ENGLISH':
+                sec = 'B. ENGLISH'
+            elif sec == 'WORLD LANGUAGE':
+                sec = 'E. LANGUAGE OTHER THAN ENGLISH'
+            elif sec == 'VISUAL/PERFORMING ARTS':
+                sec = 'F. VISUAL AND PERFORMING ARTS'
+            elif sec == 'ELECTIVE':
+                sec = 'G. COLLEGE PREPARATORY ELECTIVE'
+            
+            
+            if course.AP_honors == "Yes":
+                ap_honors += 1
+            
+            try:
+                val = float(course.credits)
+            except (ValueError, TypeError):
+                val = 5.0
+
+            courses_detail.append({
+                'course_number': course.course_number,
+                'course_name': course.course_name,
+                'credits': val,
+                'section': sec,
+                'grade_level': sc.grade_level,
+                'semesters': sc.semesters
+            })
+
+            if sec in earned_credits:
+                if earned_credits[sec] + val <= requirements[sec]:
+                    earned_credits[sec] += val
+                    course_nums[sec].append(course.course_number)
+                else:
+                    if sec != 'ELECTIVE':
+                        overflow = (earned_credits[sec] + val) - requirements[sec]
+                        earned_credits[sec] = requirements[sec]
+                        earned_credits['G. COLLEGE PREPARATORY ELECTIVE'] += overflow
+                        course_nums['G. COLLEGE PREPARATORY ELECTIVE'].append(course.course_number)
+                        course_nums[sec].append(course.course_number)
+                    else:
+                        earned_credits['G. COLLEGE PREPARATORY ELECTIVE'] += val
+                        course_nums['G. COLLEGE PREPARATORY ELECTIVE'].append(course.course_number)
+            else:
+                earned_credits['G. COLLEGE PREPARATORY ELECTIVE'] += val
+                course_nums['G. COLLEGE PREPARATORY ELECTIVE'].append(course.course_number)
+
+        minimized_credits = {cat: min(earned_credits[cat], req) for cat, req in requirements.items()}
+        raw_total_earned = sum(minimized_credits.values())
+        total_required = 150.0
+
+        total_earned = min(raw_total_earned, total_required)
+
+        return {
+            'categories': {
+                cat: {
+                    'earned': earned_credits[cat],
+                    'required': req,
+                    'complete': earned_credits[cat] >= req,
+                    'course_nums': course_nums[cat],
+                    'recommended': recommended[cat] if cat in recommended else ""
+                }
+                for cat, req in requirements.items()
+            },
+            'total_earned': total_earned,
+            'total_required': total_required,
+            'is_a_to_g_eligible': raw_total_earned >= total_required,
             'completed_courses': courses_detail,
             'total_ap_honors': ap_honors
         }
