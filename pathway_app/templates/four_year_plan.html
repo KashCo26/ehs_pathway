@@ -29,6 +29,7 @@
         {% for sc in pre_hs_courses %}
         <div draggable="true"
              ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+             title="{{ sc.course.course_name|default:sc.course.course_number }}"
              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] shadow-sm cursor-grab active:cursor-grabbing hover:opacity-80 transition">
           <span>⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
           <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold ml-1 text-sm">×</button>
@@ -50,9 +51,10 @@
   </div>
 
   <div class="overflow-x-auto pb-4">
-    <div class="grid grid-cols-4 gap-4 min-w-[1000px]">
+    <div class="flex gap-4 min-w-[1000px]">
       {% for yr in years %}
-      <div class="grid grid-cols-12 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] overflow-hidden shadow-sm">
+      <!-- Applied resize-x to restrict resizing to width only -->
+      <div class="grid grid-cols-12 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] shadow-sm resize-x overflow-auto min-w-[240px] w-full">
         
         <div class="col-span-7 p-3 border-r border-[#E2DDD5] flex flex-col justify-between">
           <div>
@@ -73,6 +75,7 @@
                 {% for sc in yr.fall %}
                 <div draggable="true"
                      ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                     title="{{ sc.course.course_name|default:sc.course.course_number }}"
                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
                   <span class="truncate pr-1">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
                   <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
@@ -98,6 +101,7 @@
                 {% for sc in yr.spring %}
                 <div draggable="true"
                      ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                     title="{{ sc.course.course_name|default:sc.course.course_number }}"
                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
                   <span class="truncate pr-1">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
                   <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
@@ -125,6 +129,7 @@
               {% for sc in yr.summer %}
               <div draggable="true"
                    ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                   title="{{ sc.course.course_name|default:sc.course.course_number }}"
                    class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:opacity-80 transition">
                 <span class="truncate text-[11px]">⋮⋮ {{ sc.course.course_name }}</span>
                 <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-xs">×</button>
@@ -138,7 +143,7 @@
           </div>
 
           <p class="text-[9px] text-[#A0AEC0] text-center leading-tight mt-3 font-medium">
-            Max 4 summer courses count toward transcript
+            Max 4 summer courses count toward high school transcript
           </p>
         </div>
 
@@ -227,14 +232,53 @@
     let currentTargetSemesters = null;
     let currentTargetIsSummer = false;
 
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedSearch = sessionStorage.getItem('keepModalSearchQuery');
+        const savedLabel = sessionStorage.getItem('keepModalLabel');
+        const savedGrade = sessionStorage.getItem('keepModalGrade');
+        const savedSemesters = sessionStorage.getItem('keepModalSemesters');
+        const savedIsSummer = sessionStorage.getItem('keepModalIsSummer');
+        const savedIsPreHs = sessionStorage.getItem('keepModalIsPreHs');
+
+        if (savedSearch !== null) {
+            openAddModal(
+                savedGrade ? parseInt(savedGrade) : null,
+                savedSemesters,
+                savedIsSummer === 'true',
+                savedIsPreHs === 'true',
+                savedLabel || 'Course'
+            );
+
+            const searchInput = document.getElementById('courseSearchInput');
+            if (searchInput) {
+                searchInput.value = savedSearch;
+                filterCourses();
+            }
+
+            sessionStorage.removeItem('keepModalSearchQuery');
+            sessionStorage.removeItem('keepModalLabel');
+            sessionStorage.removeItem('keepModalGrade');
+            sessionStorage.removeItem('keepModalSemesters');
+            sessionStorage.removeItem('keepModalIsSummer');
+            sessionStorage.removeItem('keepModalIsPreHs');
+        }
+    });
+
     function openAddModal(grade, semesters, isSummer, isPreHs, label) {
         currentModalIsPreHs = isPreHs;
         currentTargetGrade = grade;
         currentTargetSemesters = semesters;
         currentTargetIsSummer = isSummer;
 
+        const modal = document.getElementById('addCourseModal');
+        modal.dataset.currentLabel = label;
+
         document.getElementById('modalTargetTitle').innerText = 'Add Course to ' + label;
-        document.getElementById('courseSearchInput').value = '';
+        
+        if (!sessionStorage.getItem('keepModalSearchQuery')) {
+            document.getElementById('courseSearchInput').value = '';
+        }
+
         document.getElementById('modalCatalogSection').classList.remove('hidden');
 
         const errBox = document.getElementById('modalErrorMessage');
@@ -243,7 +287,11 @@
         errBox.classList.add('hidden');
 
         filterCourses();
-        document.getElementById('addCourseModal').showModal();
+        modal.showModal();
+
+        setTimeout(() => {
+            document.getElementById('courseSearchInput').focus();
+        }, 50);
     }
 
     function showMoveErrorModal(message, courseNumber, grade, semesters, isSummer, isPreHs) {
@@ -301,6 +349,16 @@
         .then(res => res.json().then(data => ({ status: res.status, body: data })))
         .then(res => {
             if (res.status === 200 && res.body.status === 'success') {
+                const searchVal = document.getElementById('courseSearchInput').value;
+                const modal = document.getElementById('addCourseModal');
+                
+                sessionStorage.setItem('keepModalSearchQuery', searchVal);
+                sessionStorage.setItem('keepModalLabel', modal.dataset.currentLabel || 'Course');
+                sessionStorage.setItem('keepModalGrade', currentTargetGrade);
+                sessionStorage.setItem('keepModalSemesters', currentTargetSemesters);
+                sessionStorage.setItem('keepModalIsSummer', currentTargetIsSummer);
+                sessionStorage.setItem('keepModalIsPreHs', currentModalIsPreHs);
+
                 window.location.reload();
             } else {
                 const msg = res.body.message || 'Error updating course position.';
@@ -381,20 +439,101 @@
         .catch(() => alert('Network error moving course.'));
     }
 
-    function filterCourses() {
-        const query = document.getElementById('courseSearchInput').value.toLowerCase().trim();
-        const items = document.querySelectorAll('.course-item');
+    function normalizeSearchQuery(text) {
+      let cleaned = (text || '').toLowerCase().trim();
+      if (!cleaned) return [''];
 
-        items.forEach(item => {
-            const name = item.getAttribute('data-name') || '';
-            const num = item.getAttribute('data-number') || '';
-            if (name.includes(query) || num.includes(query)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
+      const phraseMap = [
+          { abbr: 'viii', full: '8' },
+          { abbr: 'vii',  full: '7' },
+          { abbr: 'vi',   full: '6' },
+          { abbr: 'iv',   full: '4' },
+          { abbr: 'iii',  full: '3' },
+          { abbr: 'ii',   full: '2' },
+          { abbr: 'ix',   full: '9' },
+          { abbr: 'x',    full: '10' },
+          { abbr: 'v',    full: '5' },
+          { abbr: 'i',    full: '1' },
+          
+          { abbr: 'ap',            full: 'advanced placement' },
+          { abbr: 'us',            full: 'united states' },
+          { abbr: 'u.s.',          full: 'united states' },
+          { abbr: 'gov',           full: 'government' },
+          { abbr: 'econ',          full: 'economics' },
+          { abbr: 'calc',          full: 'calculus' },
+          { abbr: 'chem',          full: 'chemistry' },
+          { abbr: 'bio',           full: 'biology' },
+          { abbr: 'phys',          full: 'physics' },
+          { abbr: 'psych',         full: 'psychology' },
+          { abbr: 'comp sci',      full: 'computer science' },
+          { abbr: 'cs',            full: 'computer science' },
+          { abbr: 'pe',            full: 'physical education' },
+          { abbr: 'pe',            full: 'P.E.' },
+          { abbr: 'p.e.',          full: 'physical education' }
+      ];
+
+      let variants = new Set([cleaned]);
+
+      let expandedVariant = cleaned;
+      phraseMap.forEach(item => {
+          const safeAbbr = item.abbr.replace(/\./g, '\\.');
+          const regex = new RegExp(`\\b${safeAbbr}\\b`, 'gi');
+          if (regex.test(expandedVariant)) {
+              expandedVariant = expandedVariant.replace(regex, item.full);
+          }
+      });
+      variants.add(expandedVariant);
+
+      // Swap Full -> Abbr
+      let contractedVariant = cleaned;
+      phraseMap.forEach(item => {
+          const regex = new RegExp(`\\b${item.full}\\b`, 'gi');
+          if (regex.test(contractedVariant)) {
+              contractedVariant = contractedVariant.replace(regex, item.abbr);
+          }
+      });
+      variants.add(contractedVariant);
+
+      return Array.from(variants);
+  }
+
+  function filterCourses() {
+      const rawInput = document.getElementById('courseSearchInput');
+      if (!rawInput) return;
+
+      const rawQuery = rawInput.value.trim();
+      const items = document.querySelectorAll('.course-item');
+
+      // Show all items immediately if input is empty
+      if (rawQuery === '') {
+          items.forEach(item => {
+              item.style.display = 'flex';
+          });
+          return;
+      }
+
+      const queryVariants = normalizeSearchQuery(rawQuery);
+
+      items.forEach(item => {
+          const name = (item.getAttribute('data-name') || '').toLowerCase();
+          const num = (item.getAttribute('data-number') || '').toLowerCase();
+          const targetText = `${name} ${num}`;
+
+          // Normalize course catalog target text so both sides align
+          const targetVariants = normalizeSearchQuery(targetText);
+
+          const matches = queryVariants.some(qVar => 
+              targetVariants.some(tVar => tVar.includes(qVar))
+          );
+
+          if (matches) {
+              item.style.display = 'flex';
+          } else {
+              item.style.display = 'none';
+          }
+      });
+  }
+
 
     function removeCourse(courseNumber, actionName = 'remove') {
         fetch(window.location.href, {

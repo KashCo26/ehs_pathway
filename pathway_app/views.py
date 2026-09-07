@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Course, StudentProfile, StudentCourse
-from django.http import JsonResponse
+from django.http import JsonResponse, request
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -299,13 +299,13 @@ def courses(request):
     if request.method == 'POST':
         return toggle_course(request)
     student_profile = get_or_create_guest_profile(request)
-    grad_year = student_profile.graduation_year or 2028
+    grad_year = student_profile.graduation_year
     all_courses = Course.objects.all()
     return render(request, 'course_catalog.html', {'courses': all_courses, 'grad_year': str(grad_year)})
 
 def four_year_plan_view(request):
     profile = get_or_create_guest_profile(request)
-    grad_year = profile.graduation_year or 2028
+    grad_year = profile.graduation_year
     student_courses = StudentCourse.objects.filter(student=profile).select_related('course')
     pre_hs_courses = [sc for sc in student_courses if sc.is_pre_hs]
     all_courses = Course.objects.all()
@@ -342,3 +342,43 @@ def four_year_plan_view(request):
     if request.method == "POST":
         return toggle_course(request)
     return render(request, 'four_year_plan.html', context)
+
+def credits_summary(request):
+    profile = get_or_create_guest_profile(request)
+    summary = profile.get_credit_summary()
+    grad_year = profile.graduation_year
+    categories_list = []
+    
+    for cat_name, data in summary['categories'].items():
+        earned = data['earned']
+        required = data['required']
+        course_nums = data.get('course_nums', [])
+        
+        courses = Course.objects.filter(course_number__in=course_nums)
+        
+        course_list = [c.course_name or c.course_number for c in courses]
+        
+        percent = (earned / required * 100) if required > 0 else 0
+        percent = min(percent, 100.0)
+
+        categories_list.append({
+            'name': cat_name.title().upper(),
+            'earned': earned,
+            'required': required,
+            'remaining': max(0.0, required - earned),
+            'is_complete': data['complete'],
+            'percent_complete': round(percent, 1),
+            'course_names': course_list,
+        })
+
+    context = {
+        'credits_earned': summary['total_earned'],
+        'credits_required': summary['total_required'],
+        'credits_remaining': max(0.0, summary['total_required'] - summary['total_earned']),
+        'is_grad_eligible': summary['is_grad_eligible'],
+        'categories': categories_list,
+        'total_ap_honors': summary['total_ap_honors'],
+        'grad_year': grad_year,
+    }
+    
+    return render(request, 'credits.html', context)

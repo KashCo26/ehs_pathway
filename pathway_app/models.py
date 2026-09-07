@@ -44,6 +44,7 @@ class StudentProfile(models.Model):
         }
 
         earned_credits = {key: 0.0 for key in requirements.keys()}
+        course_nums = {key: [] for key in requirements.keys()}
         courses_detail = []
 
         student_courses = StudentCourse.objects.filter(student=self, grade_level__gt = 8).select_related('course')
@@ -73,15 +74,19 @@ class StudentProfile(models.Model):
             if sec in earned_credits:
                 if earned_credits[sec] + val <= requirements[sec]:
                     earned_credits[sec] += val
+                    course_nums[sec].append(course.course_number)
                 else:
                     if sec != 'ELECTIVE':
                         overflow = (earned_credits[sec] + val) - requirements[sec]
                         earned_credits[sec] = requirements[sec]
                         earned_credits['ELECTIVE'] += overflow
+                        course_nums['ELECTIVE'].append(course.course_number)
                     else:
                         earned_credits['ELECTIVE'] += val
+                        course_nums['ELECTIVE'].append(course.course_number)
             else:
                 earned_credits['ELECTIVE'] += val
+                course_nums['ELECTIVE'].append(course.course_number)
 
         total_earned = sum(earned_credits.values())
 
@@ -90,7 +95,8 @@ class StudentProfile(models.Model):
                 cat: {
                     'earned': earned_credits[cat],
                     'required': req,
-                    'complete': earned_credits[cat] >= req
+                    'complete': earned_credits[cat] >= req,
+                    'course_nums': course_nums[cat]
                 }
                 for cat, req in requirements.items()
             },

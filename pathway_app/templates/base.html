@@ -27,8 +27,8 @@
                     4-year plan
                 </a>
 
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition">
-                    <span class="w-2 h-2 rounded-full bg-neutral-content/40"></span>
+                <a href="{% url 'credits' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'credits' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
+                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'credits' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
                     Credits
                 </a>
 
