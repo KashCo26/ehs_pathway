@@ -66,9 +66,10 @@
         
         {% if category.course_names %}
           <div class="space-y-2">
-            {% for course_name in category.course_names %}
-            <div class="bg-base-200/50 p-3 rounded-2xl text-xs font-semibold text-base-content">
-              {{ course_name }}
+            {% for course_name, grade in category.course_names.items %}
+            <div class="bg-base-200/50 p-3 rounded-2xl text-xs font-semibold text-base-content flex justify-between items-center">
+              <span>{{ course_name }}</span>
+              <span class="opacity-70">Grade: {{ grade }}</span>
             </div>
             {% endfor %}
             {% if category.name == "PHYSICAL EDUCATION" %}

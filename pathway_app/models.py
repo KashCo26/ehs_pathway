@@ -152,7 +152,7 @@ class StudentProfile(models.Model):
             'A. HISTORY/SOCIAL SCIENCE': "2 years required",
             'B. ENGLISH': "4 years required",
             'C. MATH': "3 years required, 4 years strongly recommended",
-            'E. LANGUAGE OTHER THAN ENGLISH': "3 years strongly recommended",
+            'E. LANGUAGE OTHER THAN ENGLISH': "2 years required, 3 years strongly recommended",
             'D. LABORATORY SCIENCE': "2 years required, 3 years strongly recommended",
             'F. VISUAL AND PERFORMING ARTS': "1 year required",
             'G. COLLEGE PREPARATORY ELECTIVE': "1 year required",
@@ -258,6 +258,8 @@ class StudentCourse(models.Model):
     semesters = models.CharField(max_length=10, blank=True, null=True, default='1')
     is_pre_hs = models.BooleanField(null=True, default=False)
     is_summer = models.BooleanField(null=True, default=False)
+    is_overridden = models.BooleanField(default=False)
+    override_error_message = models.TextField(blank=True, null=True)
 
     class Meta:
         unique_together = ('student', 'course')
