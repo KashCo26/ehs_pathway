@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-8 bg-base-100 min-h-screen text-base-content">
+
+  <!-- Page Header -->
+  <header class="mb-8">
+    <span class="text-[11px] font-bold uppercase tracking-widest text-primary">EXPLORE</span>
+    <h1 class="text-3xl font-serif font-bold text-base-content mt-1">Career-Oriented Pathway explorer</h1>
+    <p class="text-xs text-base-content/70 mt-1">See where ROP and PLTW electives lead over multiple years. These courses are recommendations for the order to take them. Click on a course to learn more about it.</p>
+  </header>
+
+  <!-- Pathways Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mt-2">
+    {% for pathway in pathways %}
+    <div class="p-6 rounded-box bg-base-100 border border-base-300 shadow-sm flex flex-col justify-between">
+      
+      <div>
+        <!-- Pathway Title & View Pathway Button -->
+        <div class="flex items-start justify-between gap-3 mb-1">
+          <h2 class="text-lg font-serif font-bold text-base-content leading-tight">
+            {{ pathway.name }}
+          </h2>
+
+          {% if pathway.image %}
+          <button 
+            type="button" 
+            onclick="openImageModal('{{ pathway.image|escapejs }}', '{{ pathway.name|escapejs }}')"
+            class="btn btn-xs btn-outline btn-primary shrink-0 gap-1 rounded-lg text-[11px] normal-case">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+            View Pathway
+          </button>
+          {% endif %}
+        </div>
+
+        <!-- Pathway Description -->
+        {% if pathway.description %}
+        <p class="text-xs text-base-content/70 leading-relaxed mb-5">
+          {{ pathway.description }}
+        </p>
+        {% endif %}
+
+        <div class="space-y-3 px-1">
+          {% for level, courses in pathway.get_grouped_courses %}
+
+            {% if courses|length > 1 %}
+              <div class="p-3.5 rounded-2xl bg-base-200/60 border-2 border-dashed border-primary/40 space-y-2">
+                <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
+                  Level {{ level }} — These courses can be taken in any order:
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                  {% for course in courses %}
+                    <button 
+                      type="button"
+                      onclick="openCourseModal(this)"
+                      data-course-name="{{ course.course_name|default:course.course_number }}"
+                      data-course-description="{{ course.description|default:'No description available.' }}"
+                      data-course-skills="{{ course.essential_skills|default:'' }}"
+                      data-course-grade="{{ course.grade_level|default:'' }}"
+                      class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left w-fit">
+                        Level {{ level }} — {{ course.course_name|default:course.course_number }}
+                    </button>
+                  {% endfor %}
+                </div>
+              </div>
+
+            {% else %}
+              {% with course=courses.0 %}
+              <button 
+                type="button"
+                onclick="openCourseModal(this)"
+                data-course-name="{{ course.course_name|default:course.course_number }}"
+                data-course-description="{{ course.description|default:'No description available.' }}"
+                data-course-skills="{{ course.essential_skills|default:'' }}"
+                data-course-grade="{{ course.grade_level|default:'' }}"
+                class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left">
+                Level {{ level }} — {{ course.course_name|default:course.course_number }}
+              </button>
+              {% endwith %}
+            {% endif %}
+
+          {% empty %}
+            <p class="text-xs text-base-content/50 italic py-2">No courses configured for this pathway.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+    {% empty %}
+    <div class="col-span-2 text-center py-12 border border-dashed border-base-300 rounded-box">
+      <p class="text-xs text-base-content/50 font-medium">No pathways currently available.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- Course Details Modal -->
+<dialog id="course_details_modal" class="modal">
+  <div class="modal-box bg-base-100 max-w-md p-6 rounded-2xl border border-base-300 relative">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 z-10">✕</button>
+    </form>
+    
+    <div class="flex items-center justify-between gap-2 pr-10">
+      <span class="text-[10px] font-bold uppercase tracking-widest text-primary">COURSE DETAILS</span>
+      <span id="modal_course_grade" class="badge badge-primary badge-outline text-[10px] font-semibold hidden"></span>
+    </div>
+
+    <h3 id="modal_course_name" class="font-serif font-bold text-xl text-base-content mt-1"></h3>
+    
+    <div class="mt-4 space-y-4">
+      <div>
+        <h4 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-1">Description</h4>
+        <p id="modal_course_description" class="text-xs text-base-content/80 leading-relaxed"></p>
+      </div>
+
+      <div id="modal_skills_container">
+        <h4 class="text-xs font-bold text-base-content/60 uppercase tracking-wider mb-1">Essential Skills</h4>
+        <p id="modal_course_skills" class="text-xs text-base-content/80 leading-relaxed"></p>
+      </div>
+    </div>
+  </div>
+  
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Pathway Image Preview Modal -->
+<dialog id="pathway_image_modal" class="modal">
+  <div class="modal-box bg-base-100 max-w-2xl p-6 rounded-2xl border border-base-300 relative">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 z-10">✕</button>
+    </form>
+    
+    <span class="text-[10px] font-bold uppercase tracking-widest text-primary">PATHWAY DIAGRAM</span>
+    <h3 id="modal_pathway_title" class="font-serif font-bold text-xl text-base-content mt-1 mb-4"></h3>
+
+    <div class="w-full rounded-xl overflow-hidden bg-base-200 border border-base-300 flex items-center justify-center min-h-[200px]">
+      <img id="modal_pathway_img" src="" alt="Pathway diagram" class="w-full h-auto max-h-[70vh] object-contain">
+    </div>
+
+    <div class="modal-action mt-4">
+      <form method="dialog">
+        <button class="btn btn-sm bg-base-200 border-base-300 hover:bg-base-300 text-xs text-base-content">Close</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+  function openCourseModal(button) {
+    const name = button.getAttribute('data-course-name');
+    const description = button.getAttribute('data-course-description');
+    const skills = button.getAttribute('data-course-skills');
+    const grade = button.getAttribute('data-course-grade');
+
+    document.getElementById('modal_course_name').textContent = name;
+    document.getElementById('modal_course_description').textContent = description;
+
+    // Grade Level
+    const gradeBadge = document.getElementById('modal_course_grade');
+    if (grade && grade.trim() !== '') {
+      gradeBadge.textContent = grade;
+      gradeBadge.classList.remove('hidden');
+    } else {
+      gradeBadge.classList.add('hidden');
+    }
+
+    // Essential Skills
+    const skillsContainer = document.getElementById('modal_skills_container');
+    const skillsElement = document.getElementById('modal_course_skills');
+    if (skills && skills.trim() !== '') {
+      skillsElement.textContent = skills;
+      skillsContainer.classList.remove('hidden');
+    } else {
+      skillsContainer.classList.add('hidden');
+    }
+
+    document.getElementById('course_details_modal').showModal();
+  }
+
+  function openImageModal(imageUrl, pathwayName) {
+    document.getElementById('modal_pathway_title').textContent = pathwayName;
+    document.getElementById('modal_pathway_img').src = imageUrl;
+    document.getElementById('pathway_image_modal').showModal();
+  }
+</script>
+{% endblock %}

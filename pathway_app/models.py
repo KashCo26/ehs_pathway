@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
@@ -263,3 +265,67 @@ class StudentCourse(models.Model):
 
     class Meta:
         unique_together = ('student', 'course')
+        
+class Pathway(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    description = models.TextField(blank=True, null=True)
+    course_sequence = models.JSONField(
+        default=list, 
+        help_text="Ordered list of course numbers for this pathway"
+    )
+
+    def __str__(self):
+        return self.name
+
+    def get_courses(self):
+        """Fetch course objects matching the sequence."""
+        from .models import Course
+        
+        courses_dict = {
+            c.course_number: c 
+            for c in Course.objects.filter(course_number__in=self.course_sequence)
+        }
+        return [courses_dict[num] for num in self.course_sequence if num in courses_dict]
+    
+
+class Pathway(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    description = models.TextField(blank=True, null=True)
+    courses = models.ManyToManyField('Course',through='PathwayCourse',related_name='pathways')
+    image = models.ImageField(upload_to='pathway_images/', blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    def get_ordered_courses(self):
+        """Returns the course objects in sequence based on their order."""
+        return [pc.course for pc in self.pathway_courses.select_related('course').order_by('order')]
+    
+    def get_grouped_courses(self):
+        """Groups pathway courses by their order level."""
+        grouped = defaultdict(list)
+        for pc in self.pathway_courses.select_related('course').order_by('order'):
+            grouped[pc.order].append(pc.course)
+        return sorted(grouped.items())
+
+
+class PathwayCourse(models.Model):
+    pathway = models.ForeignKey(Pathway, on_delete=models.CASCADE, related_name='pathway_courses')
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='pathway_links')
+    order = models.PositiveIntegerField(help_text="Position of the course in this pathway (e.g., Level 1, Level 2)")
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ('pathway', 'course')
+
+    def __str__(self):
+        return f"{self.pathway.name} - Level {self.order}: {self.course.course_number}"
+    
+    
+class AcademicPathway(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+    image1 = models.CharField(max_length=500, blank=True, null=True)
+    image2 = models.CharField(max_length=500, blank=True, null=True)
+
+    def __str__(self):
+        return self.name

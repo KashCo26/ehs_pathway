@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import StudentRegistrationForm
-from .models import Course, StudentCourse, StudentProfile
+from .models import AcademicPathway, Course, StudentCourse, StudentProfile, Pathway, PathwayCourse
 
 
 def login_view(request):
@@ -633,3 +633,17 @@ def a_to_g_credits_summary(request):
     }
     
     return render(request, 'a_to_g_credits.html', context)
+
+def pathway_explorer(request):
+    profile = get_or_create_guest_profile(request)
+    grad_year = profile.graduation_year
+    all_courses = Course.objects.all()
+    pathways = Pathway.objects.prefetch_related('pathway_courses__course').all()
+    return render(request, 'pathway_explorer.html', {'courses': all_courses, 'grad_year': str(grad_year), 'pathways': pathways})
+
+def academic_pathway_explorer(request):
+    profile = get_or_create_guest_profile(request)
+    grad_year = profile.graduation_year
+    all_courses = Course.objects.all()
+    pathways = AcademicPathway.objects.all()
+    return render(request, 'academic_pathway.html', {'courses': all_courses, 'grad_year': str(grad_year), 'pathways': pathways})

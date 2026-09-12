@@ -37,9 +37,14 @@
                     A-to-G Credits
                 </a>
 
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition">
-                    <span class="w-2 h-2 rounded-full bg-neutral-content/40"></span>
-                    Pathway explorer
+                <a href="{% url 'pathway_explorer' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
+                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'pathway_explorer' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
+                    Career Pathway explorer
+                </a>
+
+                <a href="{% url 'academic_pathway_explorer' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
+                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
+                    Academic Pathway explorer
                 </a>
 
                 <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition">
