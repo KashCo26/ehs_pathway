@@ -11,6 +11,7 @@ django-browser-reload==1.21.0
 django-tailwind==4.5.0
 django-user-agents==0.4.0
 et_xmlfile==2.0.0
+gunicorn==26.2.0
 honcho==2.0.0
 idna==3.18
 Jinja2==3.1.6
@@ -36,3 +37,4 @@ ua-parser==1.0.2
 ua-parser-builtins==202606
 urllib3==2.7.0
 user-agents==2.2.0
+whitenoise==6.12.0
