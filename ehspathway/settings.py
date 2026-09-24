@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 import dj_database_url
-import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +22,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-84ryxq(1(^bg+bu_mxio@l7#on4rg&xnvw=nz#u=iw7$^k)qr+'
+SECRET_KEY = os.environ.get('SECRET_KEY') or 'django-insecure-84ryxq(1(^bg+bu_mxio@l7#on4rg&xnvw=nz#u=iw7$^k)qr+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+
+DEBUG = os.environ.get('DEBUG', 'False') or 'True'
 
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
@@ -83,7 +84,7 @@ WSGI_APPLICATION = 'ehspathway.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=os.environ.get('DATABASE_URL') or 'sqlite:///db.sqlite3',
         conn_max_age=600,
     )
 }
