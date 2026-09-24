@@ -35,6 +35,7 @@ class Command(BaseCommand):
                     'AP_honors': row['AP/Honors stat'].strip(),
                     'course_name': row['Course Name'].strip(),
                     'prerequisite_courses': row['Prerequisite Classes'],
+                    'grad_year': row['Grad Year'] or None
                 }
             )
 

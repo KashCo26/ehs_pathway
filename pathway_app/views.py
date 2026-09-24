@@ -81,8 +81,11 @@ def get_or_create_guest_profile(request):
     
     return profile
 
+
+import re
+
 def check_plan_dependencies(profile, student_courses):
-    errors = []
+    course_errors_map = {}
 
     completed_nums = set(
         str(n) for n in profile.completed_courses.values_list('course_number', flat=True)
@@ -99,27 +102,35 @@ def check_plan_dependencies(profile, student_courses):
 
     available_courses = set(completed_nums)
 
+    def add_error(course_number, course_name, grade_level, msg):
+        if course_number not in course_errors_map:
+            course_errors_map[course_number] = {
+                'course_number': course_number,
+                'course_name': course_name,
+                'grade_level': grade_level,
+                'messages': []
+            }
+        if msg not in course_errors_map[course_number]['messages']:
+            course_errors_map[course_number]['messages'].append(msg)
+
     for sc in sorted_plan:
         course = sc.course
         if not course:
             continue
 
-        course_name = course.course_name or course.course_number
+        course_number = str(course.course_number)
+        course_name = course.course_name or course_number
 
-        # 1. Check Grade Level Eligibility (Ignoring pre-high school courses)
+        # 1. Grade level restriction check
         if not sc.is_pre_hs and sc.grade_level and course.grade_level:
             allowed_levels = [
                 g.strip() for g in str(course.grade_level).split(',') if g.strip()
             ]
             if allowed_levels and str(sc.grade_level) not in allowed_levels:
-                errors.append({
-                    'course_number': course.course_number,
-                    'course_name': course_name,
-                    'grade_level': sc.grade_level,
-                    'error_message': f"Grade level restriction: Not allowed in Grade {sc.grade_level} (allowed: {', '.join(allowed_levels)})"
-                })
+                msg = f"Grade level restriction: Not allowed in Grade {sc.grade_level} (allowed: {', '.join(allowed_levels)})"
+                add_error(course_number, course_name, sc.grade_level, msg)
 
-        # 2. Check Prerequisites
+        # 2. Prerequisite check
         prerecs = course.prerequisite_courses or ""
         if prerecs.strip():
             raw_or_groups = re.findall(r"\(([^)]+)\)", prerecs)
@@ -132,12 +143,8 @@ def check_plan_dependencies(profile, student_courses):
                         if Course.objects.filter(course_number=n).exists() else str(n)
                         for n in group
                     ]
-                    errors.append({
-                        'course_number': course.course_number,
-                        'course_name': course_name,
-                        'grade_level': sc.grade_level,
-                        'error_message': f"Needs one of the following prerequisites: {', '.join(missing_ors)}"
-                    })
+                    msg = f"Needs one of the following prerequisites: {', '.join(missing_ors)}"
+                    add_error(course_number, course_name, sc.grade_level, msg)
 
             string_without_parens = re.sub(r"\([^)]+\)", "", prerecs)
             and_numbers = re.findall(r"\b\d{5,8}\b", string_without_parens)
@@ -149,14 +156,10 @@ def check_plan_dependencies(profile, student_courses):
                     if Course.objects.filter(course_number=n).exists() else str(n)
                     for n in missing_and
                 ]
-                errors.append({
-                    'course_number': course.course_number,
-                    'course_name': course_name,
-                    'grade_level': sc.grade_level,
-                    'error_message': f"Missing required prerequisite(s): {', '.join(missing_and_names)}"
-                })
+                msg = f"Missing required prerequisite(s): {', '.join(missing_and_names)}"
+                add_error(course_number, course_name, sc.grade_level, msg)
 
-        # 3. Check Corequisites (Concurrent Requirements)
+        # 3. Corequisite / Concurrent check
         concurs = course.concurrent or ""
         if concurs.strip():
             same_or_prior_courses = set(available_courses)
@@ -172,18 +175,15 @@ def check_plan_dependencies(profile, student_courses):
             concur_ors = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_concurs if re.findall(r"\b\d{5,8}\b", g)]
 
             for group in concur_ors:
-                if not any(str(num) in same_or_prior_courses for num in group):
+                is_met = any(str(num) in same_or_prior_courses for num in group)
+                if not is_met:
                     missing_ors = [
                         Course.objects.filter(course_number=num).first().course_name or str(num)
                         if Course.objects.filter(course_number=num).exists() else str(num)
                         for num in group
                     ]
-                    errors.append({
-                        'course_number': course.course_number,
-                        'course_name': course_name,
-                        'grade_level': sc.grade_level,
-                        'error_message': f"Corequisite issue: missing one of ({', '.join(missing_ors)})"
-                    })
+                    msg = f"Missing one of the following corequisites/prerequisites: {', '.join(missing_ors)}"
+                    add_error(course_number, course_name, sc.grade_level, msg)
 
             concur_without_parens = re.sub(r"\([^)]+\)", "", concurs)
             concur_ands = re.findall(r"\b\d{5,8}\b", concur_without_parens)
@@ -195,16 +195,22 @@ def check_plan_dependencies(profile, student_courses):
                     if Course.objects.filter(course_number=num).exists() else str(num)
                     for num in missing_concur_and
                 ]
-                errors.append({
-                    'course_number': course.course_number,
-                    'course_name': course_name,
-                    'grade_level': sc.grade_level,
-                    'error_message': f"Missing required corequisite(s): {', '.join(missing_and_names)}"
-                })
+                msg = f"Missing required corequisite(s)/prerequisite(s): {', '.join(missing_and_names)}"
+                add_error(course_number, course_name, sc.grade_level, msg)
 
-        available_courses.add(str(course.course_number))
+        available_courses.add(course_number)
+
+    errors = []
+    for data in course_errors_map.values():
+        errors.append({
+            'course_number': data['course_number'],
+            'course_name': data['course_name'],
+            'grade_level': data['grade_level'],
+            'error_message': ". ".join(data['messages'])
+        })
 
     return errors
+
 
 def toggle_course(request):
     try:
@@ -213,14 +219,15 @@ def toggle_course(request):
         profile = get_or_create_guest_profile(request)
         course_number = data.get('course_number')
         override = data.get('override', False)
-        course = get_object_or_404(Course, course_number=course_number)
+        if course_number:
+            course = get_object_or_404(Course, course_number=course_number)
         
-        if 'mandatory' in (course.course_name or '').lower():
-            if action in ['remove', 'add', 'pre-hs']:
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': 'Mandatory courses cannot be moved or removed.'
-                }, status=400)
+            if 'mandatory' in (course.course_name or '').lower():
+                if action in ['remove', 'add', 'pre-hs']:
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': 'Mandatory courses cannot be moved or removed.'
+                    }, status=400)
                 
         existing_student_courses = StudentCourse.objects.filter(student=profile)
 
@@ -394,7 +401,6 @@ def toggle_course(request):
                         else:
                             return JsonResponse({'status': 'error', 'message': "No open slots available."}, status=400)
 
-            # Store override state & error log
             error_msg_str = " | ".join(override_reasons) if override_reasons else None
             is_ovr = bool(override and override_reasons)
 
@@ -481,6 +487,25 @@ def four_year_plan_view(request):
         {'grade': 11, 'label': '11th grade', 'fall': [], 'spring': [], 'summer': []},
         {'grade': 12, 'label': '12th grade', 'fall': [], 'spring': [], 'summer': []},
     ]
+    
+    mandatory_courses = Course.objects.filter(course_name__icontains='Mandatory')
+    for course in mandatory_courses:
+        grades = [int(g.strip()) for g in str(course.grade_level or '9').split(',') if g.strip().isdigit()]
+        target_grade = grades[0] if grades else 9
+        
+        credits = float(course.credits or 10.0)
+        semesters = '1,2' if credits >= 10.0 else '1'
+                
+        StudentCourse.objects.get_or_create(
+            student=profile,
+            course=course,
+            defaults={
+                'grade_level': target_grade,
+                'semesters': semesters,
+                'is_summer': False,
+                'is_pre_hs': False,
+            }
+        )
     
     for sc in student_courses:
         if sc.grade_level in [9, 10, 11, 12]:
@@ -639,7 +664,13 @@ def pathway_explorer(request):
     grad_year = profile.graduation_year
     all_courses = Course.objects.all()
     pathways = Pathway.objects.prefetch_related('pathway_courses__course').all()
-    return render(request, 'pathway_explorer.html', {'courses': all_courses, 'grad_year': str(grad_year), 'pathways': pathways})
+    all_student_courses = StudentCourse.objects.filter(student=profile).select_related('course')
+    added_course_numbers = {
+        str(sc.course.course_number) 
+        for sc in all_student_courses 
+        if sc.course and sc.course.course_number
+    }
+    return render(request, 'pathway_explorer.html', {'courses': all_courses, 'grad_year': str(grad_year), 'pathways': pathways, 'all_student_courses': added_course_numbers})
 
 def academic_pathway_explorer(request):
     profile = get_or_create_guest_profile(request)

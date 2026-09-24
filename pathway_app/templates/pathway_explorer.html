@@ -3,20 +3,17 @@
 {% block content %}
 <div class="p-8 bg-base-100 min-h-screen text-base-content">
 
-  <!-- Page Header -->
   <header class="mb-8">
     <span class="text-[11px] font-bold uppercase tracking-widest text-primary">EXPLORE</span>
     <h1 class="text-3xl font-serif font-bold text-base-content mt-1">Career-Oriented Pathway explorer</h1>
     <p class="text-xs text-base-content/70 mt-1">See where ROP and PLTW electives lead over multiple years. These courses are recommendations for the order to take them. Click on a course to learn more about it.</p>
   </header>
 
-  <!-- Pathways Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mt-2">
     {% for pathway in pathways %}
     <div class="p-6 rounded-box bg-base-100 border border-base-300 shadow-sm flex flex-col justify-between">
       
       <div>
-        <!-- Pathway Title & View Pathway Button -->
         <div class="flex items-start justify-between gap-3 mb-1">
           <h2 class="text-lg font-serif font-bold text-base-content leading-tight">
             {{ pathway.name }}
@@ -35,7 +32,6 @@
           {% endif %}
         </div>
 
-        <!-- Pathway Description -->
         {% if pathway.description %}
         <p class="text-xs text-base-content/70 leading-relaxed mb-5">
           {{ pathway.description }}
@@ -60,7 +56,7 @@
                       data-course-description="{{ course.description|default:'No description available.' }}"
                       data-course-skills="{{ course.essential_skills|default:'' }}"
                       data-course-grade="{{ course.grade_level|default:'' }}"
-                      class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left w-fit">
+                      class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left w-fit {% if course.course_number in all_student_courses %} bg-emerald-200 border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
                         Level {{ level }} — {{ course.course_name|default:course.course_number }}
                     </button>
                   {% endfor %}
@@ -76,7 +72,7 @@
                 data-course-description="{{ course.description|default:'No description available.' }}"
                 data-course-skills="{{ course.essential_skills|default:'' }}"
                 data-course-grade="{{ course.grade_level|default:'' }}"
-                class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left">
+                class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left {% if course.course_number in all_student_courses %} bg-emerald-200 border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
                 Level {{ level }} — {{ course.course_name|default:course.course_number }}
               </button>
               {% endwith %}
@@ -98,7 +94,6 @@
 
 </div>
 
-<!-- Course Details Modal -->
 <dialog id="course_details_modal" class="modal">
   <div class="modal-box bg-base-100 max-w-md p-6 rounded-2xl border border-base-300 relative">
     <form method="dialog">

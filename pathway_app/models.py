@@ -19,6 +19,7 @@ class Course(models.Model):
     work_outside_of_class = models.TextField(blank=True, null=True)
     rop = models.TextField(blank=True, null=True)
     school_site = models.TextField(blank=True, null=True)
+    grad_year = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.course_number}"
