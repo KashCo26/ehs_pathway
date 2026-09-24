@@ -428,9 +428,31 @@ def toggle_course(request):
 
         elif action == 'remove':
             StudentCourse.objects.filter(student=profile, course=course).delete()
+            
+        elif action == 'pre-hs':
+            
+            student_course, created = StudentCourse.objects.get_or_create(
+                student=profile,
+                course=course,
+                defaults={
+                    'grade_level': None,
+                    'semesters': None,
+                    'is_summer': False,
+                    'is_pre_hs': True,
+                    'is_overridden': False,
+                }
+            )
+
+            if not created:
+                student_course.grade_level = None
+                student_course.semesters = None
+                student_course.is_summer = False
+                student_course.is_pre_hs = True
+                student_course.save()
 
         summary = profile.get_credit_summary()
         return JsonResponse({'status': 'success', 'summary': summary})
+    
 
     except Course.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Course not found'}, status=404)
