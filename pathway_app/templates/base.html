@@ -6,80 +6,126 @@
     <title>PathWay</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% tailwind_css %}
+    <style>
+        /* Sidebar transition helpers */
+        #app-sidebar {
+            transition: width 0.3s ease;
+        }
+        #main-content-wrapper {
+            transition: margin-left 0.3s ease;
+        }
+        /* Hide text labels when sidebar is collapsed */
+        body.sidebar-collapsed #app-sidebar .sidebar-text {
+            display: none;
+        }
+        body.sidebar-collapsed #app-sidebar .sidebar-header-text {
+            display: none;
+        }
+        body.sidebar-collapsed #app-sidebar .user-info-text {
+            display: none;
+        }
+        body.sidebar-collapsed #app-sidebar {
+            width: 5rem; /* w-20 equivalent */
+        }
+        body.sidebar-collapsed #main-content-wrapper {
+            margin-left: 5rem;
+        }
+        /* Rotate chevron icon when collapsed */
+        body.sidebar-collapsed #collapse-icon {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 
 <body class="bg-base-100 text-base-content min-h-screen flex flex-col">
 
-    <nav class="w-64 h-screen fixed top-0 left-0 z-50 bg-neutral text-neutral-content p-6 flex flex-col justify-between border-r border-neutral-content/10">
-        <div class="space-y-8">
-            <a href="{% url 'four_year_plan' %}" class="block text-2xl font-serif font-bold tracking-tight">
-                Path<span class="text-primary">way</span>
-            </a>
+    <nav id="app-sidebar" class="w-64 h-screen fixed top-0 left-0 z-50 bg-neutral text-neutral-content p-4 flex flex-col justify-between border-r border-neutral-content/10">
+        <div class="space-y-6">
+            
+            <div class="flex items-center justify-between px-2 mb-6">
+                <a href="{% url 'four_year_plan' %}" class="block text-2xl font-serif font-bold tracking-tight sidebar-header-text pr-4">
+                    Path<span class="text-primary">way</span>
+                </a>
+                <button type="button" onclick="toggleSidebar()" class="btn btn-ghost btn-xs text-neutral-content/70 hover:text-neutral-content hover:bg-neutral-content/10 p-1.5 rounded-lg" title="Toggle Sidebar">
+                    <i id="collapse-icon" class="fas fa-chevron-left transition-transform duration-300"></i>
+                </button>
+            </div>
 
-            <div class="space-y-2">
-                <a href="{% url 'courses' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'courses' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'courses' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    Course catalog
+            <div class="space-y-1.5">
+                <!-- Course Catalog -->
+                <a href="{% url 'courses' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'courses' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="Course catalog">
+                    <i class="fas fa-book-open w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'courses' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">Course catalog</span>
                 </a>
 
-                <a href="{% url 'four_year_plan' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'four_year_plan' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'four_year_plan' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    4-year plan
+                <!-- 4-Year Plan -->
+                <a href="{% url 'four_year_plan' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'four_year_plan' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="4-year plan">
+                    <i class="fas fa-calendar-alt w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'four_year_plan' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">4-year plan</span>
                 </a>
 
-                <a href="{% url 'credits' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'credits' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'credits' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    Graduation Credits
+                <!-- Graduation Credits -->
+                <a href="{% url 'credits' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'credits' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="Graduation Credits">
+                    <i class="fas fa-graduation-cap w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'credits' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">Graduation Credits</span>
                 </a>
 
-                <a href="{% url 'a_to_g_credits' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'a_to_g_credits' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'a_to_g_credits' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    A-to-G Credits
+                <!-- A-to-G Credits -->
+                <a href="{% url 'a_to_g_credits' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'a_to_g_credits' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="A-to-G Credits">
+                    <i class="fas fa-award w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'a_to_g_credits' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">A-to-G Credits</span>
                 </a>
 
-                <a href="{% url 'pathway_explorer' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'pathway_explorer' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    Career Pathway explorer
+                <!-- Career Pathway Explorer -->
+                <a href="{% url 'pathway_explorer' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="Career Pathway explorer">
+                    <i class="fas fa-briefcase w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'pathway_explorer' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">Career Pathway explorer</span>
                 </a>
 
-                <a href="{% url 'academic_pathway_explorer' %}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}">
-                    <span class="w-2 h-2 rounded-full {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}bg-neutral-content{% else %}bg-neutral-content/40{% endif %}"></span>
-                    Academic Pathway explorer
+                <!-- Academic Pathway Explorer -->
+                <a href="{% url 'academic_pathway_explorer' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}font-semibold bg-neutral-content/15 text-neutral-content{% endif %}" title="Academic Pathway explorer">
+                    <i class="fas fa-route w-4 text-center shrink-0 {% if request.resolver_match.url_name == 'academic_pathway_explorer' %}text-neutral-content{% else %}text-neutral-content/60{% endif %}"></i>
+                    <span class="sidebar-text truncate">Academic Pathway explorer</span>
                 </a>
 
-                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition">
-                    <span class="w-2 h-2 rounded-full bg-neutral-content/40"></span>
-                    Settings
+                <!-- Settings -->
+                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-content/70 hover:bg-neutral-content/10 transition" title="Settings">
+                    <i class="fas fa-cog w-4 text-center shrink-0 text-neutral-content/60"></i>
+                    <span class="sidebar-text truncate">Settings</span>
                 </a>
             </div>
         </div>
 
-        <div class="pt-4 border-t border-neutral-content/10 space-y-3">
-            <div class="text-xs text-neutral-content/50">
+        <!-- Bottom User / Footer Section -->
+        <div class="pt-4 border-t border-neutral-content/10 space-y-3 px-2">
+            <div class="text-xs text-neutral-content/50 user-info-text">
                 Class of {{ grad_year }}
             </div>
 
             {% if user.is_authenticated %}
                 <div class="flex items-center justify-between pt-2">
-                    <span class="text-xs font-semibold text-neutral-content truncate max-w-[120px]">
+                    <span class="text-xs font-semibold text-neutral-content truncate max-w-[100px] user-info-text">
                         {{ user.username }}
                     </span>
                     <form method="POST" action="{% url 'logout' %}" class="inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-info btn-sm">
-                            Logout
+                        <button type="submit" class="btn btn-info btn-sm px-2">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="sidebar-text ml-1">Logout</span>
                         </button>
                     </form>
                 </div>
             {% else %}
-                <a href="{% url 'login' %}" class="block text-xs text-neutral-content/70 hover:text-neutral-content transition pt-1">
-                    <i class="fas fa-sign-in-alt"></i> Log in
+                <a href="{% url 'login' %}" class="block text-xs text-neutral-content/70 hover:text-neutral-content transition pt-1" title="Log in">
+                    <i class="fas fa-sign-in-alt w-4 text-center"></i> 
+                    <span class="sidebar-text ml-2">Log in</span>
                 </a>
             {% endif %}
         </div>
     </nav>
 
-    <div class="ml-64 flex-1 flex flex-col min-h-screen">
+    <!-- Main Content Wrapper -->
+    <div id="main-content-wrapper" class="ml-64 flex-1 flex flex-col min-h-screen">
         
         {% if not user.is_authenticated %}
         <div class="w-full bg-primary/10 border-b border-primary/20 px-6 py-2.5 text-xs flex items-center justify-between gap-4 sticky top-0 z-40 backdrop-blur-md">
@@ -102,5 +148,18 @@
 
     </div>
 
+    <script>
+        function toggleSidebar() {
+            document.body.classList.toggle('sidebar-collapsed');
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+            }
+        });
+    </script>
 </body>
 </html>
