@@ -34,8 +34,8 @@
     <div>
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-[#1A202C]">Pre-High School Credits</span>
-          <span class="text-[11px] text-[#718096]">Taken in Middle School or Summer before High School</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-[#1A202C]">Middle School Credits</span>
+          <span class="text-[11px] text-[#718096]">Taken in Middle School</span>
         </div>
         <button onclick="openAddModal(8, '1,2', false, true, 'Pre-High School')" class="btn btn-xs bg-[#E5E0D8] text-[#2D3748] hover:bg-[#DCD6CB] border-none rounded-xl font-bold px-3">
           + Add Pre-HS Course
@@ -52,12 +52,13 @@
             data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
             data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
             data-description="{{ sc.course.description|default:'No description available.' }}"
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-100/80 text-xs font-semibold text-warning-900 border border-amber-200/80 shadow-xs cursor-default">
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#DCD6CB]/70 text-xs font-semibold text-[#5A6578] border border-[#C8C0B2] opacity-75 shadow-xs cursor-not-allowed">
+          <i class="fa-solid fa-lock text-[10px] text-[#718096]"></i>
           <span onclick="openCourseDetailsModal(this.parentElement, event)" class="cursor-pointer hover:underline"> {{ sc.course.course_name|default:sc.course.course_number }}</span>
         </div>
         {% else %}
         <div draggable="true"
-            ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+            ondragstart="handleDragStart(event, '{{ sc.course.course_number }}', null, null, false, true)"
             title="Click to view details"
             data-course-number="{{ sc.course.course_number }}"
             data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
@@ -67,7 +68,7 @@
             data-description="{{ sc.course.description|default:'No description available.' }}"
             class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] shadow-sm cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
           <span onclick="openCourseDetailsModal(this.parentElement, event)" class="cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
-          <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold ml-1 text-sm">×</button>
+          <button onclick="removeCourse('{{ sc.course.course_number }}', 8, '1,2', false, true)" class="text-[#718096] hover:text-red-600 font-bold ml-1 text-sm">×</button>
         </div>
         {% endif %}
         {% empty %}
@@ -87,162 +88,15 @@
   </div>
 
   <div class="overflow-x-auto pb-4">
-    <div class="flex gap-4 min-w-[1000px]">
+    <div class="flex gap-4 min-w-[1000px] items-start">
       {% for yr in years %}
-      <div class="flex flex-col rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] shadow-sm resize-x overflow-auto min-w-[260px] w-full">
+      <div class="flex flex-col gap-4 min-w-[260px] w-full">
 
-        <div class="p-3 flex flex-col justify-between flex-grow">
+        <!-- Standalone Summer Block (Above the Grade Level Column) -->
+        <div class="p-3 bg-[#E8E3DA] border border-[#E2DDD5] rounded-2xl flex flex-col justify-between shadow-xs">
           <div>
-            <div class="bg-[#E5E0D8] text-center font-bold text-xs text-[#1A202C] py-2 px-3 rounded-xl mb-2">
-              <span>{{ yr.label }}</span>
-            </div>
-
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Fall</span>
-                <button onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
-              </div>
-
-              {% if yr.grade != 9 %}
-              <div class="mb-2 px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
-                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a fall sport adds 5 PE credits">
-                  <input 
-                    type="checkbox" 
-                    {% if yr.grade in sports_fall_grades %}checked{% endif %}
-                    onchange="toggleSport({{ yr.grade }}, 'fall', this.checked)"
-                    class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
-                  />
-                  <span>Fall Sport (+5 PE)</span>
-                </label>
-              </div>
-              {% else %}
-              <div class="mb-2 px-2.5 py-1.5 rounded-lg bg-info border border-info text-center">
-                <span class="text-[10px] font-medium text-info-content block leading-tight">
-                  9th grade sports do not count for PE credits
-                </span>
-              </div>
-              {% endif %}
-
-              <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
-                   ondragover="handleDragOver(event)"
-                   ondragleave="handleDragLeave(event)"
-                   ondrop="handleDrop(event, {{ yr.grade }}, '1', false, false)">
-                {% for sc in yr.fall %}
-                {% if 'mandatory' in sc.course.course_name|lower %}
-                <div title="Mandatory course (cannot be moved or deleted)"
-                    data-course-number="{{ sc.course.course_number }}"
-                    data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
-                    data-credits="{{ sc.course.credits|default:'10.0' }}"
-                    data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
-                    data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
-                    data-description="{{ sc.course.description|default:'No description available.' }}"
-                    class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-bold text-warning-900 border border-warning-200/80 shadow-xs cursor-default">
-                  <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline"> {{ sc.course.course_name|default:sc.course.course_number }}</span>
-                </div>
-                {% else %}
-                <div draggable="true"
-                    ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
-                    title="Click to view details"
-                    data-course-number="{{ sc.course.course_number }}"
-                    data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
-                    data-credits="{{ sc.course.credits|default:'10.0' }}"
-                    data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
-                    data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
-                    data-description="{{ sc.course.description|default:'No description available.' }}"
-                    class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
-                  <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
-                  <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
-                </div>
-                {% endif %}
-                {% empty %}
-                <div onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
-                  <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Fall Course</span>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-
-            {% if yr.grade != 9 %}
-            <div class="mb-4">
-              <div class="px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
-                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a winter sport adds PE credits">
-                  <input 
-                    type="checkbox" 
-                    {% if yr.grade in sports_winter_grades %}checked{% endif %}
-                    onchange="toggleSport({{ yr.grade }}, 'winter', this.checked)"
-                    class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
-                  />
-                  <span>Winter Sport (+5 PE)</span>
-                </label>
-              </div>
-            </div>
-            {% endif %}
-
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Spring</span>
-                <button onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
-              </div>
-
-              {% if yr.grade != 9 %}
-              <div class="mb-2 px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
-                <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a spring sport adds 5 PE credits">
-                  <input 
-                    type="checkbox" 
-                    {% if yr.grade in sports_spring_grades %}checked{% endif %}
-                    onchange="toggleSport({{ yr.grade }}, 'spring', this.checked)"
-                    class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
-                  />
-                  <span>Spring Sport (+5 PE)</span>
-                </label>
-              </div>
-              {% endif %}
-
-              <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
-                   ondragover="handleDragOver(event)"
-                   ondragleave="handleDragLeave(event)"
-                   ondrop="handleDrop(event, {{ yr.grade }}, '2', false, false)">
-                {% for sc in yr.spring %}
-                {% if 'mandatory' in sc.course.course_name|lower %}
-                <div title="Mandatory course (cannot be moved or deleted)"
-                    data-course-number="{{ sc.course.course_number }}"
-                    data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
-                    data-credits="{{ sc.course.credits|default:'10.0' }}"
-                    data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
-                    data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
-                    data-description="{{ sc.course.description|default:'No description available.' }}"
-                    class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-bold text-warning-900 border border-warning-200/80 shadow-xs cursor-default">
-                  <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline">{{ sc.course.course_name|default:sc.course.course_number }}</span>
-                </div>
-                {% else %}
-                <div draggable="true"
-                    ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
-                    title="Click to view details"
-                    data-course-number="{{ sc.course.course_number }}"
-                    data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
-                    data-credits="{{ sc.course.credits|default:'10.0' }}"
-                    data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
-                    data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
-                    data-description="{{ sc.course.description|default:'No description available.' }}"
-                    class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
-                  <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
-                  <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
-                </div>
-                {% endif %}
-                {% empty %}
-                <div onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
-                  <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Spring Course</span>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-3 bg-[#E8E3DA] border-t border-[#E2DDD5] rounded-b-2xl flex flex-col justify-between">
-          <div>
-            <div class="bg-[#DFD9CD] text-center font-bold text-[11px] text-[#718096] py-1.5 rounded-xl mb-2 tracking-wider">
-              SUMMER
+            <div class="bg-[#DFD9CD] text-center font-bold text-[11px] text-[#5A6578] py-1.5 rounded-xl mb-2 tracking-wider uppercase">
+              Summer Before Grade {{ yr.grade }}
             </div>
 
             <div class="space-y-1.5 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
@@ -250,8 +104,23 @@
                  ondragleave="handleDragLeave(event)"
                  ondrop="handleDrop(event, {{ yr.grade }}, '1,2', true, false)">
               {% for sc in yr.summer %}
+              {% if 'mandatory' in sc.course.course_name|lower %}
+              <div title="Mandatory course (cannot be moved or deleted)"
+                  data-course-number="{{ sc.course.course_number }}"
+                  data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
+                  data-credits="{{ sc.course.credits|default:'10.0' }}"
+                  data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
+                  data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
+                  data-description="{{ sc.course.description|default:'No description available.' }}"
+                  class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#DCD6CB]/70 text-xs font-semibold text-[#5A6578] border border-[#C8C0B2] opacity-75 shadow-xs cursor-not-allowed">
+                <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate text-[11px] cursor-pointer hover:underline flex items-center gap-1.5">
+                  <i class="fa-solid fa-lock text-[9px] text-[#718096]"></i>
+                  {{ sc.course.course_name }}
+                </span>
+              </div>
+              {% else %}
               <div draggable="true"
-                   ondragstart="handleDragStart(event, '{{ sc.course.course_number }}')"
+                   ondragstart="handleDragStart(event, '{{ sc.course.course_number }}', {{ yr.grade }}, '1,2', true, false)"
                    title="Click to view details"
                    data-course-number="{{ sc.course.course_number }}"
                    data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
@@ -261,19 +130,182 @@
                    data-description="{{ sc.course.description|default:'No description available.' }}"
                    class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
                 <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate text-[11px] cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name }}</span>
-                <button onclick="removeCourse('{{ sc.course.course_number }}')" class="text-[#718096] hover:text-red-600 font-bold text-xs">×</button>
+                <button onclick="removeCourse('{{ sc.course.course_number }}', {{ yr.grade }}, '1,2', true, false)" class="text-[#718096] hover:text-red-600 font-bold text-xs">×</button>
               </div>
+              {% endif %}
               {% endfor %}
             </div>
 
-            <button onclick="openAddModal({{ yr.grade }}, '1,2', true, false, 'Grade {{ yr.grade }} - Summer')" class="w-full mt-2 py-1.5 text-[11px] font-bold text-[#718096] bg-[#DFD9CD] hover:bg-[#D5CEBF] rounded-xl transition text-center">
+            <button onclick="openAddModal({{ yr.grade }}, '1,2', true, false, 'Summer Before Grade {{ yr.grade }}')" class="w-full mt-2 py-1.5 text-[11px] font-bold text-[#718096] bg-[#DFD9CD] hover:bg-[#D5CEBF] rounded-xl transition text-center">
               + Add
             </button>
           </div>
 
-          <p class="text-[9px] text-[#A0AEC0] text-center leading-tight mt-3 font-medium">
-            Max 4 summer courses count toward high school transcript
+          <p class="text-[9px] text-secondary-content text-center leading-tight mt-2 font-medium">
+            *Max 4 summer courses count toward transcript
           </p>
+        </div>
+
+        <!-- Grade Card Block (Fall & Spring) -->
+        <div class="flex flex-col rounded-2xl bg-[#EFECE6] border border-[#E2DDD5] shadow-sm resize-x overflow-auto w-full">
+          <div class="p-3 flex flex-col justify-between flex-grow">
+            <div>
+              <div class="bg-[#E5E0D8] text-center font-bold text-xs text-[#1A202C] py-2 px-3 rounded-xl mb-3">
+                <span>{{ yr.label }}</span>
+              </div>
+
+              <!-- Fall Semester -->
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Fall</span>
+                  <button onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
+                </div>
+
+                {% if yr.grade != 9 %}
+                <div class="mb-2 px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a fall sport adds 5 PE credits">
+                    <input 
+                      type="checkbox" 
+                      {% if yr.grade in sports_fall_grades %}checked{% endif %}
+                      onchange="toggleSport({{ yr.grade }}, 'fall', this.checked)"
+                      class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
+                    />
+                    <span>Fall Sport (+5 PE)</span>
+                  </label>
+                </div>
+                {% else %}
+                <div class="mb-2 px-3 py-1.5 rounded-md bg-info/10 border border-info/20 text-info flex items-center justify-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-info shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span class="text-[11px] font-medium leading-tight">
+                    9th grade sports do not count for PE credits
+                  </span>
+                </div>
+                {% endif %}
+
+                <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event, {{ yr.grade }}, '1', false, false)">
+                  {% for sc in yr.fall %}
+                  {% if 'mandatory' in sc.course.course_name|lower %}
+                  <div title="Mandatory course (cannot be moved or deleted)"
+                      data-course-number="{{ sc.course.course_number }}"
+                      data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
+                      data-credits="{{ sc.course.credits|default:'10.0' }}"
+                      data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
+                      data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
+                      data-description="{{ sc.course.description|default:'No description available.' }}"
+                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#DCD6CB]/70 text-xs font-semibold text-[#5A6578] border border-[#C8C0B2] opacity-75 shadow-xs cursor-not-allowed">
+                    <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline flex items-center gap-1.5">
+                      <i class="fa-solid fa-lock text-[10px] text-[#718096]"></i>
+                      {{ sc.course.course_name|default:sc.course.course_number }}
+                    </span>
+                  </div>
+                  {% else %}
+                  <div draggable="true"
+                      ondragstart="handleDragStart(event, '{{ sc.course.course_number }}', {{ yr.grade }}, '1', false, false)"
+                      title="Click to view details"
+                      data-course-number="{{ sc.course.course_number }}"
+                      data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
+                      data-credits="{{ sc.course.credits|default:'10.0' }}"
+                      data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
+                      data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
+                      data-description="{{ sc.course.description|default:'No description available.' }}"
+                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
+                    <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
+                    <button onclick="removeCourse('{{ sc.course.course_number }}', {{ yr.grade }}, '1', false, false)" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
+                  </div>
+                  {% endif %}
+                  {% empty %}
+                  <div onclick="openAddModal({{ yr.grade }}, '1', false, false, 'Grade {{ yr.grade }} - Fall')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
+                    <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Fall Course</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              {% if yr.grade != 9 %}
+              <div class="mb-4">
+                <div class="px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a winter sport adds PE credits">
+                    <input 
+                      type="checkbox" 
+                      {% if yr.grade in sports_winter_grades %}checked{% endif %}
+                      onchange="toggleSport({{ yr.grade }}, 'winter', this.checked)"
+                      class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
+                    />
+                    <span>Winter Sport (+5 PE)</span>
+                  </label>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Spring Semester -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[10px] font-bold text-[#A0AEC0] tracking-wider uppercase">Spring</span>
+                  <button onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="text-[10px] font-bold text-[#8A7B6C] hover:underline">+ Add</button>
+                </div>
+
+                {% if yr.grade != 9 %}
+                <div class="mb-2 px-2 py-1 rounded-lg bg-[#E8E3DA] border border-[#E2DDD5] flex items-center justify-between">
+                  <label class="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10px] font-bold text-[#2D3748]" title="Participating in a spring sport adds 5 PE credits">
+                    <input 
+                      type="checkbox" 
+                      {% if yr.grade in sports_spring_grades %}checked{% endif %}
+                      onchange="toggleSport({{ yr.grade }}, 'spring', this.checked)"
+                      class="rounded border-[#C8C0B2] text-emerald-600 focus:ring-0 cursor-pointer w-3 h-3"
+                    />
+                    <span>Spring Sport (+5 PE)</span>
+                  </label>
+                </div>
+                {% endif %}
+
+                <div class="space-y-2 min-h-[45px] p-1 rounded-xl transition-colors duration-150"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event, {{ yr.grade }}, '2', false, false)">
+                  {% for sc in yr.spring %}
+                  {% if 'mandatory' in sc.course.course_name|lower %}
+                  <div title="Mandatory course (cannot be moved or deleted)"
+                      data-course-number="{{ sc.course.course_number }}"
+                      data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
+                      data-credits="{{ sc.course.credits|default:'10.0' }}"
+                      data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
+                      data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
+                      data-description="{{ sc.course.description|default:'No description available.' }}"
+                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#DCD6CB]/70 text-xs font-semibold text-[#5A6578] border border-[#C8C0B2] opacity-75 shadow-xs cursor-not-allowed">
+                    <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline flex items-center gap-1.5">
+                      <i class="fa-solid fa-lock text-[10px] text-[#718096]"></i>
+                      {{ sc.course.course_name|default:sc.course.course_number }}
+                    </span>
+                  </div>
+                  {% else %}
+                  <div draggable="true"
+                      ondragstart="handleDragStart(event, '{{ sc.course.course_number }}', {{ yr.grade }}, '2', false, false)"
+                      title="Click to view details"
+                      data-course-number="{{ sc.course.course_number }}"
+                      data-course-name="{{ sc.course.course_name|default:sc.course.course_number }}"
+                      data-credits="{{ sc.course.credits|default:'10.0' }}"
+                      data-prerequisite="{{ sc.course.essential_skills|default:'None' }}"
+                      data-commitment="{{ sc.course.work_outside_of_class|default:'N/A' }}"
+                      data-description="{{ sc.course.description|default:'No description available.' }}"
+                      class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#E2DDD3] text-xs font-semibold text-[#2D3748] cursor-grab active:cursor-grabbing hover:bg-[#D8D2C6] transition">
+                    <span onclick="openCourseDetailsModal(this.parentElement, event)" class="truncate pr-1 cursor-pointer hover:underline">⋮⋮ {{ sc.course.course_name|default:sc.course.course_number }}</span>
+                    <button onclick="removeCourse('{{ sc.course.course_number }}', {{ yr.grade }}, '2', false, false)" class="text-[#718096] hover:text-red-600 font-bold text-sm">×</button>
+                  </div>
+                  {% endif %}
+                  {% empty %}
+                  <div onclick="openAddModal({{ yr.grade }}, '2', false, false, 'Grade {{ yr.grade }} - Spring')" class="h-9 border border-dashed border-[#D6CEC2] rounded-xl flex items-center justify-center cursor-pointer hover:bg-[#E5E0D8]/50 transition">
+                    <span class="text-[10px] text-[#A0AEC0] font-medium">+ Add Spring Course</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -281,6 +313,7 @@
     </div>
   </div>
 
+  <!-- Summary Footer Bar -->
   <div class="mt-6 bg-neutral border-2 border-neutral text-white px-8 py-6 rounded-3xl flex items-center justify-between shadow-2xl">
     <div class="flex items-center gap-14">
       <div>
@@ -316,162 +349,167 @@
   </div>
   {% endif %}
 
-<dialog id="viewCourseModal" class="modal">
-  <div class="modal-box bg-[#FAF8F3] text-[#2D3748] rounded-3xl border border-[#E2DDD5] max-w-md p-6">
-    <div class="flex items-start justify-between mb-3">
-      <div>
-        <span id="detailCourseNumber" class="text-[11px] font-mono font-bold text-[#8A7B6C] uppercase tracking-wider block">#---</span>
-        <h3 id="detailCourseName" class="font-serif font-bold text-xl text-[#1A202C] leading-snug">Course Name</h3>
+  <!-- View Course Modal -->
+  <dialog id="viewCourseModal" class="modal">
+    <div class="modal-box bg-[#FAF8F3] text-[#2D3748] rounded-3xl border border-[#E2DDD5] max-w-md p-6">
+      <div class="flex items-start justify-between mb-3">
+        <div>
+          <span id="detailCourseNumber" class="text-[11px] font-mono font-bold text-[#8A7B6C] uppercase tracking-wider block">#---</span>
+          <h3 id="detailCourseName" class="font-serif font-bold text-xl text-[#1A202C] leading-snug">Course Name</h3>
+        </div>
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost text-[#718096]">✕</button>
+        </form>
       </div>
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost text-[#718096]">✕</button>
-      </form>
-    </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
-        <span class="text-[10px] font-bold text-[#718096] uppercase block mb-0.5">Prerequisites</span>
-        <span id="detailPrereqs" class="text-xs font-medium text-[#1A202C]">None</span>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
+          <span class="text-[10px] font-bold text-[#718096] uppercase block mb-0.5">Prerequisites</span>
+          <span id="detailPrereqs" class="text-xs font-medium text-[#1A202C]">None</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
+          <span class="text-[10px] font-bold text-[#718096] uppercase block mb-0.5">Commitment / Workload</span>
+          <span id="detailCommitment" class="text-xs font-medium text-[#1A202C]">N/A</span>
+        </div>
       </div>
-      <div class="p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
-        <span class="text-[10px] font-bold text-[#718096] uppercase block mb-0.5">Commitment / Workload</span>
-        <span id="detailCommitment" class="text-xs font-medium text-[#1A202C]">N/A</span>
+
+      <div class="mb-5 p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
+        <span class="text-[10px] font-bold text-[#718096] uppercase block mb-1">Description</span>
+        <p id="detailDescription" class="text-xs text-[#2D3748] leading-relaxed">No description provided.</p>
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-[#E2DDD5]">
+        <span id="detailCredits" class="text-xs font-semibold text-[#8A7B6C]">5.0 Credits</span>
+        <form method="dialog">
+          <button class="btn btn-sm bg-[#E5E0D8] text-[#2D3748] hover:bg-[#DCD6CB] border-none rounded-xl font-bold px-4">Close</button>
+        </form>
       </div>
     </div>
+  </dialog>
 
-    <div class="mb-5 p-3 rounded-2xl bg-[#EFECE6] border border-[#E2DDD5]">
-      <span class="text-[10px] font-bold text-[#718096] uppercase block mb-1">Description</span>
-      <p id="detailDescription" class="text-xs text-[#2D3748] leading-relaxed">No description provided.</p>
-    </div>
+  <!-- Confirm Removal Modal -->
+  <dialog id="confirmRemoveModal" class="modal">
+    <div class="modal-box bg-base-100 text-base-content rounded-box border border-base-300 max-w-sm p-6 shadow-sm">
+      <div class="flex items-center gap-3 mb-3 text-error">
+        <span class="text-xl"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <h3 class="font-bold text-lg text-base-content">Confirm Removal</h3>
+      </div>
+      
+      <p class="text-sm opacity-70 mb-6 leading-relaxed">
+        Are you sure you want to remove this course? This action cannot be undone.
+      </p>
 
-    <div class="flex justify-between items-center pt-2 border-t border-[#E2DDD5]">
-      <span id="detailCredits" class="text-xs font-semibold text-[#8A7B6C]">5.0 Credits</span>
-      <form method="dialog">
-        <button class="btn btn-sm bg-[#E5E0D8] text-[#2D3748] hover:bg-[#DCD6CB] border-none rounded-xl font-bold px-4">Close</button>
-      </form>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="confirmRemoveModal" class="modal">
-  <div class="modal-box bg-base-100 text-base-content rounded-box border border-base-300 max-w-sm p-6 shadow-sm">
-    <div class="flex items-center gap-3 mb-3 text-error">
-      <span class="text-xl"><i class="fa-solid fa-triangle-exclamation"></i></span>
-      <h3 class="font-bold text-lg text-base-content">Confirm Removal</h3>
-    </div>
-    
-    <p class="text-sm opacity-70 mb-6 leading-relaxed">
-      Are you sure you want to remove this course? This action cannot be undone.
-    </p>
-
-    <div class="flex justify-end gap-3 pt-4 border-t border-base-200">
-      <form method="dialog">
-        <button class="btn btn-sm bg-base-200 hover:bg-base-300 text-base-content border-none rounded-btn font-semibold px-4 transition-colors">
-          Cancel
+      <div class="flex justify-end gap-3 pt-4 border-t border-base-200">
+        <form method="dialog">
+          <button class="btn btn-sm bg-base-200 hover:bg-base-300 text-base-content border-none rounded-btn font-semibold px-4 transition-colors">
+            Cancel
+          </button>
+        </form>
+        <button id="confirmRemoveBtn" onclick="executeRemoveCourse()" class="btn btn-sm btn-error text-error-content rounded-btn font-semibold px-4 transition-all">
+          Remove
         </button>
-      </form>
-      <button id="confirmRemoveBtn" onclick="executeRemoveCourse()" class="btn btn-sm btn-error text-error-content rounded-btn font-semibold px-4 transition-all">
-        Remove
-      </button>
-    </div>
-  </div>
-</dialog>
-
-<dialog id="addCourseModal" class="modal">
-  <div class="modal-box bg-[#FAF8F3] text-[#2D3748] rounded-3xl border border-[#E2DDD5] max-w-lg p-6">
-    
-    <div id="modalSuccessBanner" class="hidden mb-4 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs transition-all">
-      <span id="modalSuccessText">Course added successfully!</span>
-      <button onclick="document.getElementById('modalSuccessBanner').classList.add('hidden')" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2">✕</button>
-    </div>
-
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="font-serif font-bold text-lg text-[#1A202C]" id="modalTargetTitle">Add Course</h3>
-        <p class="text-xs text-[#718096]">Search catalog by course name or number</p>
       </div>
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost text-[#718096]">✕</button>
-      </form>
     </div>
+  </dialog>
 
-    <div id="modalErrorMessage" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-medium space-y-2">
-      <div id="modalErrorText"></div>
-      <div id="modalOverrideContainer" class="pt-1"></div>
-    </div>
-
-    <div id="modalCatalogSection">
-      <div class="relative mb-4">
-        <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#A0AEC0]"></i>
-        <input 
-          type="text" 
-          id="courseSearchInput" 
-          oninput="filterCourses()" 
-          placeholder="Type course name (e.g., Algebra, AP Biology)..." 
-          class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] text-xs font-medium focus:outline-none focus:border-[#1A202C]">
+  <!-- Add Course Modal -->
+  <dialog id="addCourseModal" class="modal">
+    <div class="modal-box bg-[#FAF8F3] text-[#2D3748] rounded-3xl border border-[#E2DDD5] max-w-lg p-6">
+      
+      <div id="modalSuccessBanner" class="hidden mb-4 p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs transition-all">
+        <span id="modalSuccessText">Course added successfully!</span>
+        <button onclick="document.getElementById('modalSuccessBanner').classList.add('hidden')" class="text-emerald-700 hover:text-emerald-900 font-bold ml-2">✕</button>
       </div>
 
-      <div id="courseResultsList" class="max-h-64 overflow-y-auto space-y-2 pr-1">
-        {% for course in all_courses %}
-        <div 
-          data-name="{{ course.course_name|lower }}" 
-          data-number="{{ course.course_number|lower }}"
-          onclick="submitAddCourse('{{ course.course_number }}')" 
-          class="course-item p-3 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] hover:bg-[#E5E0D8] cursor-pointer transition flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-[#1A202C]">{{ course.course_name }}</div>
-            <div class="text-[10px] text-[#718096] font-mono">#{{ course.course_number }} • {{ course.credits|default:"5.0" }} credits</div>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-serif font-bold text-lg text-[#1A202C]" id="modalTargetTitle">Add Course</h3>
+          <p class="text-xs text-[#718096]">Search catalog by course name or number</p>
+        </div>
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost text-[#718096]">✕</button>
+        </form>
+      </div>
+
+      <div id="modalErrorMessage" class="hidden mb-4 p-3 rounded-xl bg-red-100 border border-red-200 text-red-700 text-xs font-medium space-y-2">
+        <div id="modalErrorText"></div>
+        <div id="modalOverrideContainer" class="pt-1"></div>
+      </div>
+
+      <div id="modalCatalogSection">
+        <div class="relative mb-4">
+          <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#A0AEC0]"></i>
+          <input 
+            type="text" 
+            id="courseSearchInput" 
+            oninput="filterCourses()" 
+            placeholder="Type course name (e.g., Algebra, AP Biology)..." 
+            class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] text-xs font-medium focus:outline-none focus:border-[#1A202C]">
+        </div>
+
+        <div id="courseResultsList" class="max-h-64 overflow-y-auto space-y-2 pr-1">
+          {% for course in all_courses %}
+          <div 
+            data-name="{{ course.course_name|lower }}" 
+            data-number="{{ course.course_number|lower }}"
+            onclick="submitAddCourse('{{ course.course_number }}')" 
+            class="course-item p-3 rounded-xl bg-[#EFECE6] border border-[#E2DDD5] hover:bg-[#E5E0D8] cursor-pointer transition flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-[#1A202C]">{{ course.course_name }}</div>
+              <div class="text-[10px] text-[#718096] font-mono">#{{ course.course_number }} • {{ course.credits|default:"5.0" }} credits</div>
+            </div>
+
+            {% if course.course_number in all_student_courses %}
+              <span id="btn-course-{{ course.course_number }}" class="text-xs font-bold text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">✓ Selected</span>
+            {% else %}
+              <span id="btn-course-{{ course.course_number }}" class="text-xs font-bold text-[#8A7B6C]">+ Select</span>
+            {% endif %}
           </div>
-
-          {% if course.course_number in all_student_courses %}
-            <span id="btn-course-{{ course.course_number }}" class="text-xs font-bold text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg">✓ Selected</span>
-          {% else %}
-            <span id="btn-course-{{ course.course_number }}" class="text-xs font-bold text-[#8A7B6C]">+ Select</span>
-          {% endif %}
+          {% empty %}
+          <p class="text-xs text-center text-[#A0AEC0] py-6">No courses available in catalog.</p>
+          {% endfor %}
         </div>
-        {% empty %}
-        <p class="text-xs text-center text-[#A0AEC0] py-6">No courses available in catalog.</p>
-        {% endfor %}
       </div>
     </div>
-  </div>
-</dialog>
+  </dialog>
 
-{% if overridden_errors %}
-<div id="override-warnings-section" class="mt-8 p-4 rounded-3xl bg-warning/10 border border-warning/30 shadow-xs">
-  <div class="flex items-center gap-2.5 mb-3">
-    <span class="text-xl"><i class="fa-solid fa-triangle-exclamation"></i></span>
-    <h3 class="text-base font-bold text-base-content">
-      Overridden Prerequisites & Course Warnings
-    </h3>
-    <span class="badge bg-warning badge-sm font-semibold">
-      {{ overridden_errors|length }} unresolved issue(s)
-    </span>
-  </div>
-  
-  <ul class="divide-y divide-warning/20">
-    {% for err in overridden_errors %}
-    <li class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-      <div class="space-y-0.5">
-        <div class="flex items-center gap-1.5">
-          <span class="font-bold text-base-content text-sm">{{ err.course_name }}</span>
-          <span class="badge badge-ghost badge-xs text-base-content/70">
-            Grade {{ err.grade_level|default:"Pre-HS" }}
-          </span>
+  {% if overridden_errors %}
+  <div id="override-warnings-section" class="mt-8 p-4 rounded-3xl bg-warning/10 border border-warning/30 shadow-xs">
+    <div class="flex items-center gap-2.5 mb-3">
+      <span class="text-xl"><i class="fa-solid fa-triangle-exclamation"></i></span>
+      <h3 class="text-base font-bold text-base-content">
+        Overridden Prerequisites & Course Warnings
+      </h3>
+      <span class="badge bg-warning badge-sm font-semibold">
+        {{ overridden_errors|length }} unresolved issue(s)
+      </span>
+    </div>
+    
+    <ul class="divide-y divide-warning/20">
+      {% for err in overridden_errors %}
+      <li class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-1.5">
+            <span class="font-bold text-base-content text-sm">{{ err.course_name }}</span>
+            <span class="badge badge-ghost badge-xs text-base-content/70">
+              Grade {{ err.grade_level|default:"Pre-HS" }}
+            </span>
+          </div>
+          <p class="text-base-content/80 text-xs font-normal">
+            {{ err.error_message }}
+          </p>
         </div>
-        <p class="text-base-content/80 text-xs font-normal">
-          {{ err.error_message }}
-        </p>
-      </div>
-      <button onclick="confirmRemoveCourse('{{ err.course_number }}')" 
-        class="btn btn-error btn-xs btn-outline self-start sm:self-center shrink-0">
-        Resolve & Remove Course
-      </button>
-    </li>
-    {% endfor %}
-  </ul>
+        <button onclick="confirmRemoveCourse('{{ err.course_number }}')" 
+          class="btn btn-error btn-xs btn-outline self-start sm:self-center shrink-0">
+          Resolve & Remove Course
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
 </div>
-{% endif %}
 
 <script>
     let currentModalIsPreHs = false;
@@ -487,9 +525,7 @@
       const courseNumber = element.getAttribute('data-course-number') || '';
       const courseName = element.getAttribute('data-course-name') || '';
       const credits = element.getAttribute('data-credits') || '5.0';
-      
       const prereqs = element.getAttribute('data-prerequisite') || 'None';
-      
       const commitment = element.getAttribute('data-commitment') || 'N/A';
       const description = element.getAttribute('data-description') || 'No description available.';
 
@@ -501,39 +537,7 @@
       document.getElementById('detailCredits').innerText = credits + ' Credits';
 
       document.getElementById('viewCourseModal').showModal();
-  }
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const savedSearch = sessionStorage.getItem('keepModalSearchQuery');
-        const savedLabel = sessionStorage.getItem('keepModalLabel');
-        const savedGrade = sessionStorage.getItem('keepModalGrade');
-        const savedSemesters = sessionStorage.getItem('keepModalSemesters');
-        const savedIsSummer = sessionStorage.getItem('keepModalIsSummer');
-        const savedIsPreHs = sessionStorage.getItem('keepModalIsPreHs');
-
-        if (savedSearch !== null) {
-            openAddModal(
-                savedGrade ? parseInt(savedGrade) : null,
-                savedSemesters,
-                savedIsSummer === 'true',
-                savedIsPreHs === 'true',
-                savedLabel || 'Course'
-            );
-
-            const searchInput = document.getElementById('courseSearchInput');
-            if (searchInput) {
-                searchInput.value = savedSearch;
-                filterCourses();
-            }
-
-            sessionStorage.removeItem('keepModalSearchQuery');
-            sessionStorage.removeItem('keepModalLabel');
-            sessionStorage.removeItem('keepModalGrade');
-            sessionStorage.removeItem('keepModalSemesters');
-            sessionStorage.removeItem('keepModalIsSummer');
-            sessionStorage.removeItem('keepModalIsPreHs');
-        }
-    });
+    }
 
     function openAddModal(grade, semesters, isSummer, isPreHs, label) {
         currentModalIsPreHs = isPreHs;
@@ -667,14 +671,12 @@
               const searchVal = document.getElementById('courseSearchInput');
               const modal = document.getElementById('addCourseModal');
               
-              // Mark button as selected dynamically
               const btn = document.getElementById(`btn-course-${courseNumber}`);
               if (btn) {
                   btn.className = "text-xs font-bold text-emerald-600 bg-emerald-100/60 px-2.5 py-1 rounded-lg";
                   btn.innerText = "✓ Selected";
               }
 
-              // Save state for persistence across reload
               sessionStorage.setItem('keepModalSearchQuery', searchVal ? searchVal.value : '');
               sessionStorage.setItem('keepModalLabel', modal.dataset.currentLabel || 'Course');
               sessionStorage.setItem('keepModalGrade', currentTargetGrade);
@@ -706,9 +708,15 @@
       });
   }
 
-    /* DRAG AND DROP HANDLERS */
-    function handleDragStart(e, courseNumber) {
-        e.dataTransfer.setData('text/plain', courseNumber);
+    function handleDragStart(e, courseNumber, gradeLevel = null, semesters = null, isSummer = false, isPreHs = false) {
+        const payload = JSON.stringify({
+            courseNumber: courseNumber,
+            from_grade: gradeLevel,
+            from_semesters: semesters,
+            from_is_summer: isSummer,
+            from_is_pre_hs: isPreHs
+        });
+        e.dataTransfer.setData('text/plain', payload);
         e.dataTransfer.effectAllowed = 'move';
     }
 
@@ -726,8 +734,15 @@
         e.preventDefault();
         e.currentTarget.classList.remove('bg-[#E5E0D8]/60');
 
-        const courseNumber = e.dataTransfer.getData('text/plain');
-        if (!courseNumber) return;
+        const rawData = e.dataTransfer.getData('text/plain');
+        if (!rawData) return;
+
+        let dragData;
+        try {
+            dragData = JSON.parse(rawData);
+        } catch (err) {
+            dragData = { courseNumber: rawData };
+        }
 
         const actionType = isPreHs ? 'pre-hs' : 'add';
 
@@ -738,11 +753,15 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
-                course_number: courseNumber,
+                course_number: dragData.courseNumber,
                 action: actionType,
                 grade_level: grade,
                 semesters: semesters,
-                is_summer: isSummer
+                is_summer: isSummer,
+                from_grade: dragData.from_grade,
+                from_semesters: dragData.from_semesters,
+                from_is_summer: dragData.from_is_summer,
+                from_is_pre_hs: dragData.from_is_pre_hs
             })
         })
         .then(res => res.json().then(data => ({ status: res.status, body: data })))
@@ -752,7 +771,7 @@
             } else {
                 showMoveErrorModal(
                     res.body.message || 'Cannot move course to this slot.', 
-                    courseNumber, 
+                    dragData.courseNumber, 
                     grade, 
                     semesters, 
                     isSummer, 
@@ -792,7 +811,9 @@
           { abbr: 'comp sci',      full: 'computer science' },
           { abbr: 'cs',            full: 'computer science' },
           { abbr: 'pe',            full: 'physical education' },
-          { abbr: 'p.e.',          full: 'physical education' }
+          { abbr: 'p.e.',          full: 'physical education' },
+          { abbr: 'ta',            full: 'student assistant' },
+          { abbr: 't.a.',          full: 'student assistant' }
       ];
 
       let variants = new Set([cleaned]);
@@ -854,7 +875,7 @@
       });
     }
 
-    function removeCourse(courseNumber, actionName = 'remove') {
+    function removeCourse(courseNumber, gradeLevel = null, semesters = null, isSummer = false, isPreHs = false) {
         fetch(window.location.href, {
             method: 'POST',
             headers: {
@@ -862,29 +883,22 @@
                 'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
+                action: isPreHs ? 'remove_pre_hs' : 'remove',
                 course_number: courseNumber,
-                action: actionName
+                grade_level: gradeLevel,
+                semesters: semesters,
+                is_summer: isSummer
             })
         })
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
                 window.location.reload();
+            } else {
+                alert(data.message || 'Error removing course.');
             }
         })
         .catch(() => alert('Network error. Please try again.'));
-
-        fetch(window.location.href, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-          body: JSON.stringify({ action: 'remove', course_number: courseNumber })
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.status === 'success') {
-              window.location.reload();
-          }
-      });
     }
 
     function toggleSport(gradeLevel, season, isChecked) {
@@ -913,24 +927,24 @@
     }
 
     let courseToRemove = null;
-    function confirmRemoveCourse(courseNumber) {
-      courseToRemove = courseNumber;
-      const modal = document.getElementById('confirmRemoveModal');
-      if (modal) {
-        modal.showModal();
-      }
+
+    function confirmRemoveCourse(courseNumber, gradeLevel = null) {
+        courseToRemove = { courseNumber, gradeLevel };
+        const modal = document.getElementById('confirmRemoveModal');
+        if (modal) {
+            modal.showModal();
+        }
     }
 
     function executeRemoveCourse() {
-      if (courseToRemove) {
-        const modal = document.getElementById('confirmRemoveModal');
-        if (modal) {
-          modal.close();
+        if (courseToRemove) {
+            const modal = document.getElementById('confirmRemoveModal');
+            if (modal) {
+                modal.close();
+            }
+            removeCourse(courseToRemove.courseNumber, courseToRemove.gradeLevel);
+            courseToRemove = null;
         }
-        // Call your existing removal function
-        removeCourse(courseToRemove);
-        courseToRemove = null;
-      }
     }
 </script>
 {% endblock %}

@@ -81,15 +81,20 @@ def get_or_create_guest_profile(request):
     
     return profile
 
-
-import re
-
 def check_plan_dependencies(profile, student_courses):
     course_errors_map = {}
 
     completed_nums = set(
         str(n) for n in profile.completed_courses.values_list('course_number', flat=True)
     )
+
+    pre_hs_nums = set(
+        str(sc.course.course_number)
+        for sc in student_courses
+        if sc.is_pre_hs and sc.course
+    )
+
+    base_available = completed_nums.union(pre_hs_nums)
 
     sorted_plan = sorted(
         student_courses,
@@ -100,18 +105,18 @@ def check_plan_dependencies(profile, student_courses):
         )
     )
 
-    available_courses = set(completed_nums)
+    available_courses = set(base_available)
 
-    def add_error(course_number, course_name, grade_level, msg):
-        if course_number not in course_errors_map:
-            course_errors_map[course_number] = {
+    def add_error(course_key, course_number, course_name, grade_level, msg):
+        if course_key not in course_errors_map:
+            course_errors_map[course_key] = {
                 'course_number': course_number,
                 'course_name': course_name,
                 'grade_level': grade_level,
                 'messages': []
             }
-        if msg not in course_errors_map[course_number]['messages']:
-            course_errors_map[course_number]['messages'].append(msg)
+        if msg not in course_errors_map[course_key]['messages']:
+            course_errors_map[course_key]['messages'].append(msg)
 
     for sc in sorted_plan:
         course = sc.course
@@ -120,21 +125,21 @@ def check_plan_dependencies(profile, student_courses):
 
         course_number = str(course.course_number)
         course_name = course.course_name or course_number
+        # Create a unique key per section instance so errors are mapped per section instance
+        course_key = f"{course_number}_{sc.grade_level}_{sc.is_summer}_{sc.semesters}"
 
-        # 1. Grade level restriction check
         if not sc.is_pre_hs and sc.grade_level and course.grade_level:
             allowed_levels = [
                 g.strip() for g in str(course.grade_level).split(',') if g.strip()
             ]
             if allowed_levels and str(sc.grade_level) not in allowed_levels:
                 msg = f"Grade level restriction: Not allowed in Grade {sc.grade_level} (allowed: {', '.join(allowed_levels)})"
-                add_error(course_number, course_name, sc.grade_level, msg)
+                add_error(course_key, course_number, course_name, sc.grade_level, msg)
 
-        # 2. Prerequisite check
         prerecs = course.prerequisite_courses or ""
         if prerecs.strip():
             raw_or_groups = re.findall(r"\(([^)]+)\)", prerecs)
-            or_groups = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_groups if re.findall(r"\b\d{5,8}\b", g)]
+            or_groups = [re.findall(r"\b[A-Za-z0-9_-]+\b", g) for g in raw_or_groups if re.findall(r"\b[A-Za-z0-9_-]+\b", g)]
 
             for group in or_groups:
                 if not any(str(num) in available_courses for num in group):
@@ -144,10 +149,10 @@ def check_plan_dependencies(profile, student_courses):
                         for n in group
                     ]
                     msg = f"Needs one of the following prerequisites: {', '.join(missing_ors)}"
-                    add_error(course_number, course_name, sc.grade_level, msg)
+                    add_error(course_key, course_number, course_name, sc.grade_level, msg)
 
             string_without_parens = re.sub(r"\([^)]+\)", "", prerecs)
-            and_numbers = re.findall(r"\b\d{5,8}\b", string_without_parens)
+            and_numbers = re.findall(r"\b[A-Za-z0-9_-]+\b", string_without_parens)
             missing_and = [num for num in and_numbers if str(num) not in available_courses]
 
             if missing_and:
@@ -157,9 +162,8 @@ def check_plan_dependencies(profile, student_courses):
                     for n in missing_and
                 ]
                 msg = f"Missing required prerequisite(s): {', '.join(missing_and_names)}"
-                add_error(course_number, course_name, sc.grade_level, msg)
+                add_error(course_key, course_number, course_name, sc.grade_level, msg)
 
-        # 3. Corequisite / Concurrent check
         concurs = course.concurrent or ""
         if concurs.strip():
             same_or_prior_courses = set(available_courses)
@@ -172,7 +176,7 @@ def check_plan_dependencies(profile, student_courses):
                 same_or_prior_courses.update(concurrent_in_grade)
 
             raw_or_concurs = re.findall(r"\(([^)]+)\)", concurs)
-            concur_ors = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_concurs if re.findall(r"\b\d{5,8}\b", g)]
+            concur_ors = [re.findall(r"\b[A-Za-z0-9_-]+\b", g) for g in raw_or_concurs if re.findall(r"\b[A-Za-z0-9_-]+\b", g)]
 
             for group in concur_ors:
                 is_met = any(str(num) in same_or_prior_courses for num in group)
@@ -183,10 +187,10 @@ def check_plan_dependencies(profile, student_courses):
                         for num in group
                     ]
                     msg = f"Missing one of the following corequisites/prerequisites: {', '.join(missing_ors)}"
-                    add_error(course_number, course_name, sc.grade_level, msg)
+                    add_error(course_key, course_number, course_name, sc.grade_level, msg)
 
             concur_without_parens = re.sub(r"\([^)]+\)", "", concurs)
-            concur_ands = re.findall(r"\b\d{5,8}\b", concur_without_parens)
+            concur_ands = re.findall(r"\b[A-Za-z0-9_-]+\b", concur_without_parens)
             missing_concur_and = [num for num in concur_ands if str(num) not in same_or_prior_courses]
 
             if missing_concur_and:
@@ -196,7 +200,7 @@ def check_plan_dependencies(profile, student_courses):
                     for num in missing_concur_and
                 ]
                 msg = f"Missing required corequisite(s)/prerequisite(s): {', '.join(missing_and_names)}"
-                add_error(course_number, course_name, sc.grade_level, msg)
+                add_error(course_key, course_number, course_name, sc.grade_level, msg)
 
         available_courses.add(course_number)
 
@@ -211,7 +215,6 @@ def check_plan_dependencies(profile, student_courses):
 
     return errors
 
-
 def toggle_course(request):
     try:
         data = json.loads(request.body)
@@ -219,55 +222,54 @@ def toggle_course(request):
         profile = get_or_create_guest_profile(request)
         course_number = data.get('course_number')
         override = data.get('override', False)
+
         if course_number:
             course = get_object_or_404(Course, course_number=course_number)
-        
+
             if 'mandatory' in (course.course_name or '').lower():
                 if action in ['remove', 'add', 'pre-hs']:
                     return JsonResponse({
-                        'status': 'error', 
+                        'status': 'error',
                         'message': 'Mandatory courses cannot be moved or removed.'
                     }, status=400)
-                
+
         existing_student_courses = StudentCourse.objects.filter(student=profile)
 
         if action == 'toggle_sport':
             grade_level = int(data.get('grade_level'))
             season = data.get('season')
             has_sport = data.get('has_sport', False)
-            
+
             sports_list = profile.sports_grades or []
-            
             sports_list = [
-                item for item in sports_list 
+                item for item in sports_list
                 if not (isinstance(item, dict) and item.get('grade_level') == grade_level and item.get('season') == season)
             ]
-            
+
             if has_sport:
                 sports_list.append({
                     'grade_level': grade_level,
                     'season': season,
                     'has_sport': True
                 })
-            
+
             profile.sports_grades = sports_list
             profile.save()
 
             summary = profile.get_credit_summary()
-            return JsonResponse({
-                'status': 'success',
-                'summary': summary
-            })
+            return JsonResponse({'status': 'success', 'summary': summary})
 
-        course_number = data.get('course_number')
-        override = data.get('override', False)
-        
         target_grade = data.get('grade_level')
         target_semesters = data.get('semesters')
         target_is_summer = data.get('is_summer', False)
 
+        # Retrieve source parameters sent during drag/drop move operations
+        from_grade = data.get('from_grade')
+        from_semesters = data.get('from_semesters')
+        from_is_summer = data.get('from_is_summer', False)
+        from_is_pre_hs = data.get('from_is_pre_hs', False)
+
         course = Course.objects.get(course_number=course_number)
-        existing_student_courses = StudentCourse.objects.filter(student=profile)
 
         if action == 'add':
             override_reasons = []
@@ -279,25 +281,27 @@ def toggle_course(request):
             else:
                 prerecs = course.prerequisite_courses or ""
                 concurs = course.concurrent or ""
-                
-                # Check Prerequisites
-                if prerecs.strip():
-                    completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
-                    planned_nums = set(str(n) for n in StudentCourse.objects.filter(student=profile).values_list('course__course_number', flat=True))
-                    all_student_courses = completed_nums.union(planned_nums)
 
+                completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
+                pre_hs_nums = set(str(n) for n in existing_student_courses.filter(is_pre_hs=True).values_list('course__course_number', flat=True))
+                planned_nums = set(str(n) for n in existing_student_courses.values_list('course__course_number', flat=True))
+
+                base_student_courses = completed_nums.union(pre_hs_nums)
+                all_student_courses = base_student_courses.union(planned_nums)
+
+                if prerecs.strip():
                     if target_grade:
                         allowed_grades = range(8, int(target_grade))
                         pre_check_courses = set(
                             str(n) for n in existing_student_courses.filter(
                                 grade_level__in=allowed_grades
                             ).values_list('course__course_number', flat=True)
-                        ).union(completed_nums)
+                        ).union(base_student_courses)
                     else:
                         pre_check_courses = all_student_courses
 
                     raw_or_groups = re.findall(r"\(([^)]+)\)", prerecs)
-                    or_groups = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_groups if re.findall(r"\b\d{5,8}\b", g)]
+                    or_groups = [re.findall(r"\b[A-Za-z0-9_-]+\b", g) for g in raw_or_groups if re.findall(r"\b[A-Za-z0-9_-]+\b", g)]
 
                     for group in or_groups:
                         if not any(str(num) in pre_check_courses for num in group):
@@ -309,7 +313,7 @@ def toggle_course(request):
                                 return JsonResponse({'status': 'error', 'message': f"Cannot add {course.course_name or course_number}. {msg}."}, status=400)
 
                     string_without_parens = re.sub(r"\([^)]+\)", "", prerecs)
-                    and_numbers = re.findall(r"\b\d{5,8}\b", string_without_parens)
+                    and_numbers = re.findall(r"\b[A-Za-z0-9_-]+\b", string_without_parens)
                     missing_and = [num for num in and_numbers if str(num) not in pre_check_courses]
                     if missing_and:
                         missing_and_names = [Course.objects.filter(course_number=n).first().course_name if Course.objects.filter(course_number=n).exists() else str(n) for n in missing_and]
@@ -320,21 +324,26 @@ def toggle_course(request):
                             return JsonResponse({'status': 'error', 'message': f"Cannot add {course.course_name or course_number}. {msg}."}, status=400)
 
                 if concurs.strip():
-                    completed_nums = set(str(n) for n in profile.completed_courses.values_list('course_number', flat=True))
-                    planned_nums = set(str(n) for n in StudentCourse.objects.filter(student=profile).values_list('course__course_number', flat=True))
-                    all_student_courses = completed_nums.union(planned_nums)
-
                     if target_grade:
-                        pre_check_courses = set(str(n) for n in existing_student_courses.filter(grade_level__in=range(8, int(target_grade))).values_list('course__course_number', flat=True))
-                        concurrent_courses = set(str(n) for n in existing_student_courses.filter(grade_level=int(target_grade)).values_list('course__course_number', flat=True))
+                        pre_check_courses = set(
+                            str(n) for n in existing_student_courses.filter(
+                                grade_level__in=range(8, int(target_grade))
+                            ).values_list('course__course_number', flat=True)
+                        ).union(base_student_courses)
+
+                        concurrent_courses = set(
+                            str(n) for n in existing_student_courses.filter(
+                                grade_level=int(target_grade)
+                            ).values_list('course__course_number', flat=True)
+                        )
                     else:
                         pre_check_courses = all_student_courses
                         concurrent_courses = set()
 
                     raw_or_concurs = re.findall(r"\(([^)]+)\)", concurs)
-                    concur_ors = [re.findall(r"\b\d{5,8}\b", g) for g in raw_or_concurs if re.findall(r"\b\d{5,8}\b", g)]
+                    concur_ors = [re.findall(r"\b[A-Za-z0-9_-]+\b", g) for g in raw_or_concurs if re.findall(r"\b[A-Za-z0-9_-]+\b", g)]
                     concur_without_parens = re.sub(r"\([^)]+\)", "", concurs)
-                    concur_ands = re.findall(r"\b\d{5,8}\b", concur_without_parens)
+                    concur_ands = re.findall(r"\b[A-Za-z0-9_-]+\b", concur_without_parens)
 
                     for group in concur_ors:
                         if not any((str(num) in pre_check_courses) or (str(num) in concurrent_courses) for num in group):
@@ -368,7 +377,7 @@ def toggle_course(request):
                         override_reasons.append(f"Grade level restriction bypassed for Grade {target_grade} (allowed: {', '.join(allowed_levels)}).")
                     else:
                         return JsonResponse({'status': 'error', 'message': f"Cannot add {course.course_name or course_number} to Grade {target_grade}."}, status=400)
-                    
+
                     assigned_semesters = '1,2' if course_credits >= 10.0 else target_semesters
                     assigned_is_summer = bool(target_is_summer)
                 else:
@@ -404,61 +413,79 @@ def toggle_course(request):
             error_msg_str = " | ".join(override_reasons) if override_reasons else None
             is_ovr = bool(override and override_reasons)
 
-            student_course, created = StudentCourse.objects.get_or_create(
+            # Delete the record from its source slot if source parameters were supplied
+            if from_is_pre_hs:
+                StudentCourse.objects.filter(student=profile, course=course, is_pre_hs=True).delete()
+            elif from_grade is not None:
+                StudentCourse.objects.filter(
+                    student=profile,
+                    course=course,
+                    grade_level=int(from_grade),
+                    semesters=from_semesters,
+                    is_summer=bool(from_is_summer)
+                ).delete()
+
+            # Create the course in its new target slot
+            StudentCourse.objects.create(
                 student=profile,
                 course=course,
-                defaults={
-                    'grade_level': assigned_grade,
-                    'semesters': assigned_semesters,
-                    'is_summer': assigned_is_summer,
-                    'is_pre_hs': False,
-                    'is_overridden': is_ovr,
-                    'override_error_message': error_msg_str,
-                }
+                grade_level=assigned_grade,
+                is_summer=assigned_is_summer,
+                semesters=assigned_semesters,
+                is_pre_hs=False,
+                is_overridden=is_ovr,
+                override_error_message=error_msg_str,
             )
 
-            if not created:
-                student_course.grade_level = assigned_grade
-                student_course.semesters = assigned_semesters
-                student_course.is_summer = assigned_is_summer
-                student_course.is_pre_hs = False
-                student_course.is_overridden = is_ovr
-                student_course.override_error_message = error_msg_str
-                student_course.save()
+        elif action in ['remove', 'remove_pre_hs']:
+            if action == 'remove_pre_hs' or (data.get('is_pre_hs') is True):
+                deleted_count, _ = StudentCourse.objects.filter(
+                    student=profile,
+                    course=course,
+                    is_pre_hs=True
+                ).delete()
+            else:
+                courses_to_delete = StudentCourse.objects.filter(
+                    student=profile,
+                    course=course,
+                    is_pre_hs=False,
+                    is_summer=bool(target_is_summer)
+                )
 
-        elif action == 'remove':
-            StudentCourse.objects.filter(student=profile, course=course).delete()
-            
+                if target_grade is not None and str(target_grade).isdigit():
+                    courses_to_delete = courses_to_delete.filter(grade_level=int(target_grade))
+
+                deleted_count, _ = courses_to_delete.delete()
+        
         elif action == 'pre-hs':
-            
-            student_course, created = StudentCourse.objects.get_or_create(
+            if from_grade is not None:
+                StudentCourse.objects.filter(
+                    student=profile,
+                    course=course,
+                    grade_level=int(from_grade),
+                    semesters=from_semesters,
+                    is_summer=bool(from_is_summer)
+                ).delete()
+
+            StudentCourse.objects.create(
                 student=profile,
                 course=course,
-                defaults={
-                    'grade_level': None,
-                    'semesters': None,
-                    'is_summer': False,
-                    'is_pre_hs': True,
-                    'is_overridden': False,
-                }
+                is_pre_hs=True,
+                grade_level=None,
+                semesters=None,
+                is_summer=False,
+                is_overridden=False,
             )
-
-            if not created:
-                student_course.grade_level = None
-                student_course.semesters = None
-                student_course.is_summer = False
-                student_course.is_pre_hs = True
-                student_course.save()
 
         summary = profile.get_credit_summary()
         return JsonResponse({'status': 'success', 'summary': summary})
-    
 
     except Course.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Course not found'}, status=404)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)  
+        
+    
 def courses(request):
     if request.method == 'POST':
         return toggle_course(request)

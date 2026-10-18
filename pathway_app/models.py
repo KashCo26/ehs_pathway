@@ -27,7 +27,7 @@ class Course(models.Model):
 
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    graduation_year = models.IntegerField(default=datetime.now().year + 4)
+    graduation_year = models.IntegerField(default=None, null=True)
     completed_courses = models.ManyToManyField(Course, through='StudentCourse', blank=True)
     sports_grades = models.JSONField(default=list, blank=True)
 
@@ -265,7 +265,7 @@ class StudentCourse(models.Model):
     override_error_message = models.TextField(blank=True, null=True)
 
     class Meta:
-        unique_together = ('student', 'course')
+        unique_together = ('student', 'course', 'grade_level', 'is_summer', 'semesters', 'is_pre_hs')
         
 class Pathway(models.Model):
     name = models.CharField(max_length=200, unique=True)
