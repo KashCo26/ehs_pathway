@@ -24,7 +24,7 @@
               </svg>
             </h2>
             {% if category.recommended %}
-              <p class="text-xs text-[#8A7B6C] font-light mt-0.5">
+              <p class="text-xs text-base-content/70 font-light mt-0.5">
                 {{ category.recommended }}
               </p>
             {% endif %}
@@ -56,7 +56,7 @@
             *NOTE: All courses with extra credits are added to this section as well.
           {% endif %}
           {% if category.name == "PHYSICAL EDUCATION" %}
-            *NOTE: Each season of a sport adds 5 PE credits applicable for grades 10-12.
+            *NOTE: Each season of a sport adds 5 PE credits applicable for grades 10-11.
           {% endif %}
         </p>
       </summary>
@@ -99,19 +99,19 @@
 
   </div>
 
-  <div class="mt-6 bg-[#1A2638] text-white px-8 py-6 rounded-3xl flex items-center justify-between shadow-2xl">
+  <div class="mt-6 bg-neutral text-neutral-content px-8 py-6 rounded-3xl flex items-center justify-between shadow-2xl">
     <div class="flex items-center gap-14">
       <div>
         <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_earned|floatformat:1 }}</div>
-        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Credits Earned</div>
+        <div class="text-[10px] font-bold tracking-widest text-neutral-content/70 mt-1 uppercase">Credits Earned</div>
       </div>
       <div>
         <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_required|floatformat:1 }}</div>
-        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Required to Graduate</div>
+        <div class="text-[10px] font-bold tracking-widest text-neutral-content/70 mt-1 uppercase">Required to Graduate</div>
       </div>
       <div>
         <div class="text-3xl font-bold font-sans tracking-tight">{{ credits_remaining|floatformat:1 }}</div>
-        <div class="text-[10px] font-bold tracking-widest text-[#8A99AD] mt-1 uppercase">Remaining</div>
+        <div class="text-[10px] font-bold tracking-widest text-neutral-content/70 mt-1 uppercase">Remaining</div>
       </div>
     </div>
   </div>

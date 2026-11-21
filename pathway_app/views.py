@@ -1,15 +1,16 @@
 import json
 import re
 
-from django.contrib.auth import login, logout
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-
+from django.contrib.auth.decorators import login_required
 from .forms import StudentRegistrationForm
-from .models import AcademicPathway, Course, StudentCourse, StudentProfile, Pathway, PathwayCourse
+from .models import AcademicPathway, Course, StudentCourse, StudentProfile, Pathway
+from django.contrib import messages
 
 
 def login_view(request):
@@ -263,7 +264,6 @@ def toggle_course(request):
         target_semesters = data.get('semesters')
         target_is_summer = data.get('is_summer', False)
 
-        # Retrieve source parameters sent during drag/drop move operations
         from_grade = data.get('from_grade')
         from_semesters = data.get('from_semesters')
         from_is_summer = data.get('from_is_summer', False)
@@ -413,7 +413,6 @@ def toggle_course(request):
             error_msg_str = " | ".join(override_reasons) if override_reasons else None
             is_ovr = bool(override and override_reasons)
 
-            # Delete the record from its source slot if source parameters were supplied
             if from_is_pre_hs:
                 StudentCourse.objects.filter(student=profile, course=course, is_pre_hs=True).delete()
             elif from_grade is not None:
@@ -425,7 +424,6 @@ def toggle_course(request):
                     is_summer=bool(from_is_summer)
                 ).delete()
 
-            # Create the course in its new target slot
             StudentCourse.objects.create(
                 student=profile,
                 course=course,
@@ -485,14 +483,60 @@ def toggle_course(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)  
         
-    
+        
+import re
+
+import re
+from .models import Course, StudentCourse, StudentProfile, Pathway, AcademicPathway
+# ... keep your other imports ...
+
 def courses(request):
     if request.method == 'POST':
         return toggle_course(request)
+    
     student_profile = get_or_create_guest_profile(request)
     grad_year = student_profile.graduation_year
-    all_courses = Course.objects.all()
+    
+    try:
+        g_year = int(grad_year)
+    except (TypeError, ValueError):
+        g_year = 2030  # Default fallback if graduation year isn't set or invalid
+
+    all_courses_qs = Course.objects.all()
+    
+    # Group courses by their base number (stripping trailing letters like A, B)
+    course_groups = {}
+    for course in all_courses_qs:
+        base_key = re.sub(r'[A-Za-z]+$', '', str(course.course_number)).strip()
+        if not base_key:
+            base_key = course.course_number
+        course_groups.setdefault(base_key, []).append(course)
+        
+    filtered_course_numbers = []
+    for base_key, group in course_groups.items():
+        has_grad_year_version = any(c.grad_year is not None and str(c.grad_year).strip() != '' for c in group)
+        has_standard_version = any(c.grad_year is None or str(c.grad_year).strip() == '' for c in group)
+        
+        # If the course has multiple versions (one with a grad year rule and one without)
+        if has_grad_year_version and has_standard_version:
+            for course in group:
+                if course.grad_year is not None and str(course.grad_year).strip() != '':
+                    # Include the 2029+ version only if grad year is 2029 or greater
+                    if g_year >= 2029:
+                        filtered_course_numbers.append(course.course_number)
+                else:
+                    # Include the pre-2029 version only if grad year is 2028 or less
+                    if g_year <= 2028:
+                        filtered_course_numbers.append(course.course_number)
+        else:
+            # Single-version courses remain completely unaffected
+            for course in group:
+                filtered_course_numbers.append(course.course_number)
+                
+    all_courses = Course.objects.filter(course_number__in=filtered_course_numbers)
+    
     return render(request, 'course_catalog.html', {'courses': all_courses, 'grad_year': str(grad_year)})
+
 
 def sort_key(sc):
     is_mandatory = 'mandatory' in (sc.course.course_name or '').lower() if sc.course else False
@@ -727,3 +771,80 @@ def academic_pathway_explorer(request):
     all_courses = Course.objects.all()
     pathways = AcademicPathway.objects.all()
     return render(request, 'academic_pathway.html', {'courses': all_courses, 'grad_year': str(grad_year), 'pathways': pathways})
+
+@login_required
+def settings_view(request):
+    user = request.user
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # 1. Update Graduation Year (Profile)
+        if action == 'update_profile':
+            grad_year = request.POST.get('grad_year', '').strip()
+            if grad_year:
+                try:
+                    grad_year_int = int(grad_year)
+                    # Assuming grad_year is stored in request.session or user profile model
+                    request.session['grad_year'] = grad_year_int
+                    profile = get_or_create_guest_profile(request)
+                    profile.graduation_year = grad_year_int
+                    messages.success(request, f"Graduation year updated to Class of {grad_year_int}.")
+                except ValueError:
+                    messages.error(request, "Please enter a valid year.")
+            else:
+                request.session.pop('grad_year', None)
+                messages.success(request, "Graduation year cleared.")
+
+        # 2. Update Username & Email
+        elif action == 'update_account':
+            new_username = request.POST.get('username', '').strip()
+            new_email = request.POST.get('email', '').strip()
+
+            if not new_username or not new_email:
+                messages.error(request, "Username and email cannot be empty.")
+            elif User.objects.filter(username=new_username).exclude(pk=user.pk).exists():
+                messages.error(request, "That username is already taken.")
+            elif User.objects.filter(email=new_email).exclude(pk=user.pk).exists():
+                messages.error(request, "That email address is already in use by another account.")
+            else:
+                user.username = new_username
+                user.email = new_email
+                user.save()
+                messages.success(request, "Account details updated successfully.")
+
+        # 3. Update Password
+        elif action == 'update_password':
+            current_password = request.POST.get('current_password', '')
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
+
+            if not user.check_password(current_password):
+                messages.error(request, "Your current password was entered incorrectly.")
+            elif new_password != confirm_password:
+                messages.error(request, "The new passwords do not match.")
+            elif len(new_password) < 8:
+                messages.error(request, "New password must be at least 8 characters long.")
+            else:
+                user.set_password(new_password)
+                user.save()
+                # Prevents the user from being logged out after password change
+                update_session_auth_hash(request, user)
+                messages.success(request, "Your password was changed successfully.")
+
+        # 4. Restore Dismissed Warnings
+        elif action == 'reset_warnings':
+            request.session.pop('dismissed_warnings', None)
+            messages.success(request, "All prerequisite warnings restored on your 4-year plan.")
+
+        return redirect('settings')
+
+    context = {
+        'grad_year': request.session.get('grad_year', getattr(user, 'profile', None) and getattr(user.profile, 'grad_year', '')),
+    }
+    return render(request, 'settings.html', context)
+
+def glossary_view(request):
+    profile = get_or_create_guest_profile(request)
+    grad_year = profile.graduation_year
+    return render(request, 'glossary.html', {'grad_year': grad_year})

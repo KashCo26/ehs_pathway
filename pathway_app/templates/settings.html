@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-8 bg-base-100 min-h-screen text-base-content max-w-4xl mx-auto">
+
+  <!-- Page Header -->
+  <header class="mb-8">
+    <span class="text-[11px] font-bold uppercase tracking-widest text-primary">ACCOUNT</span>
+    <h1 class="text-3xl font-serif font-bold text-base-content mt-1">Account Settings</h1>
+    <p class="text-xs opacity-70 mt-1">Manage your profile details, academic track, and security credentials.</p>
+  </header>
+
+  <!-- Django Messages Banner -->
+  {% if messages %}
+  <div class="space-y-3 mb-6">
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %} rounded-2xl shadow-xs text-xs font-semibold">
+      <div class="flex items-center gap-2">
+        {% if message.tags == 'error' %}
+        <i class="fas fa-exclamation-circle text-base"></i>
+        {% else %}
+        <i class="fas fa-check-circle text-base"></i>
+        {% endif %}
+        <span>{{ message }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="space-y-6">
+
+    <!-- Section 1: Academic Profile -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm rounded-3xl p-6">
+      <div class="flex items-center gap-3 border-b border-base-300 pb-4 mb-6">
+        <div class="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-serif font-bold text-base-content">Academic Profile</h2>
+          <p class="text-xs opacity-70">Update your high school graduation year.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{% url 'settings' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+
+        <div class="form-control w-full max-w-xs">
+          <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="grad_year">
+            Graduation Year
+          </label>
+          <input 
+            type="number" 
+            id="grad_year" 
+            name="grad_year" 
+            value="{{ grad_year|default:'' }}" 
+            placeholder="e.g. 2027" 
+            min="2000" 
+            max="2099"
+            class="input input-bordered rounded-xl bg-base-100 focus:outline-none focus:border-primary w-full text-xs font-medium"
+          >
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="submit" class="btn btn-primary btn-sm rounded-xl px-5 text-xs font-semibold">
+            Save Academic Profile
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Section 2: Account Information (Username & Email) -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm rounded-3xl p-6">
+      <div class="flex items-center gap-3 border-b border-base-300 pb-4 mb-6">
+        <div class="w-10 h-10 rounded-2xl bg-secondary/10 text-secondary flex items-center justify-center font-bold">
+          <i class="fas fa-user-gear"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-serif font-bold text-base-content">Account Details</h2>
+          <p class="text-xs opacity-70">Update your username and contact email address.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{% url 'settings' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_account">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Username Field -->
+          <div class="form-control w-full">
+            <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="username">
+              Username
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40">
+                <i class="fas fa-user"></i>
+              </span>
+              <input 
+                type="text" 
+                id="username" 
+                name="username" 
+                value="{{ user.username|default:'' }}" 
+                required 
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 text-xs font-medium focus:outline-none focus:border-primary"
+                placeholder="Enter new username"
+              >
+            </div>
+          </div>
+
+          <!-- Email Field -->
+          <div class="form-control w-full">
+            <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="email">
+              Email Address
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40">
+                <i class="fas fa-envelope"></i>
+              </span>
+              <input 
+                type="email" 
+                id="email" 
+                name="email" 
+                value="{{ user.email|default:'' }}" 
+                required 
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 text-xs font-medium focus:outline-none focus:border-primary"
+                placeholder="student@school.edu"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="submit" class="btn btn-primary btn-sm rounded-xl px-5 text-xs font-semibold">
+            Update Account Info
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Section 3: Security & Password -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm rounded-3xl p-6">
+      <div class="flex items-center gap-3 border-b border-base-300 pb-4 mb-6">
+        <div class="w-10 h-10 rounded-2xl bg-warning/15 text-warning-content flex items-center justify-center font-bold">
+          <i class="fas fa-lock"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-serif font-bold text-base-content">Change Password</h2>
+          <p class="text-xs opacity-70">Ensure your password is at least 8 characters long.</p>
+        </div>
+      </div>
+
+      <form method="POST" action="{% url 'settings' %}" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_password">
+
+        <div class="space-y-4 max-w-md">
+          <!-- Current Password -->
+          <div class="form-control w-full">
+            <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="current_password">
+              Current Password
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40">
+                <i class="fas fa-key"></i>
+              </span>
+              <input 
+                type="password" 
+                id="current_password" 
+                name="current_password" 
+                required 
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 text-xs font-medium focus:outline-none focus:border-primary"
+                placeholder="••••••••"
+              >
+            </div>
+          </div>
+
+          <!-- New Password -->
+          <div class="form-control w-full">
+            <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="new_password">
+              New Password
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40">
+                <i class="fas fa-lock"></i>
+              </span>
+              <input 
+                type="password" 
+                id="new_password" 
+                name="new_password" 
+                required 
+                minlength="8"
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 text-xs font-medium focus:outline-none focus:border-primary"
+                placeholder="New password (min 8 chars)"
+              >
+            </div>
+          </div>
+
+          <!-- Confirm New Password -->
+          <div class="form-control w-full">
+            <label class="label text-xs font-bold uppercase tracking-wider opacity-70 pb-1" for="confirm_password">
+              Confirm New Password
+            </label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40">
+                <i class="fas fa-shield-alt"></i>
+              </span>
+              <input 
+                type="password" 
+                id="confirm_password" 
+                name="confirm_password" 
+                required 
+                minlength="8"
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 text-xs font-medium focus:outline-none focus:border-primary"
+                placeholder="Repeat new password"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button type="submit" class="btn btn-primary btn-sm rounded-xl px-5 text-xs font-semibold">
+            Change Password
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Section 4: Course Plan Preferences -->
+    <div class="card bg-base-100 border border-base-300 shadow-sm rounded-3xl p-6">
+      <div class="flex items-center gap-3 border-b border-base-300 pb-4 mb-6">
+        <div class="w-10 h-10 rounded-2xl bg-info/10 text-info flex items-center justify-center font-bold">
+          <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-serif font-bold text-base-content">Plan Notifications</h2>
+          <p class="text-xs opacity-70">Manage warning popups and dismissed prerequisite alerts.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xs font-bold text-base-content">Reset Dismissed Warnings</h3>
+          <p class="text-xs opacity-70 mt-0.5">Restore any course prerequisite or corequisite warning messages you previously dismissed.</p>
+        </div>
+
+        <form method="POST" action="{% url 'settings' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reset_warnings">
+          <button type="submit" class="btn btn-outline btn-sm rounded-xl px-4 text-xs font-semibold">
+            Restore Warnings
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

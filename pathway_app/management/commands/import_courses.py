@@ -19,8 +19,23 @@ class Command(BaseCommand):
         excel_course_numbers = set()
 
         for _, row in df.iterrows():
-            c_num = str(row['Course Number']).strip()
-            g_year = row['Grad Year'] or None
+            raw_c_num = str(row['Course Number']).strip()
+            if raw_c_num.endswith('.0'):
+                raw_c_num = raw_c_num[:-2]
+            c_num = raw_c_num
+
+            if not c_num or c_num.lower() == 'nan':
+                continue
+
+            raw_g_year = str(row.get('Grad Year', '')).strip()
+            g_year = None
+            if raw_g_year and raw_g_year.lower() != 'nan':
+                try:
+                    if raw_g_year.endswith('.0'):
+                        raw_g_year = raw_g_year[:-2]
+                    g_year = int(float(raw_g_year))
+                except (ValueError, TypeError):
+                    g_year = None
 
             excel_course_numbers.add(c_num)
 
@@ -28,19 +43,19 @@ class Command(BaseCommand):
                 course_number=c_num,
                 defaults={
                     'grad_year': g_year,
-                    'grade_level': row['Grade Level'],
-                    'length': str(row['Length']).strip(),
-                    'essential_skills': str(row['Prerequisites']).strip(),
-                    'description': str(row['Description']).strip(),
-                    'work_outside_of_class': str(row['Work outside of Class']).strip(),
-                    'credits': row['Credits'],
-                    'section': str(row['Graduation']).strip(),
-                    'rop': str(row['ROP']).strip(),
-                    'school_site': str(row['School Site']).strip(),
-                    'concurrent': row['Concurrent Enrollment Classes'],
-                    'AP_honors': str(row['AP/Honors stat']).strip(),
-                    'course_name': str(row['Course Name']).strip(),
-                    'prerequisite_courses': row['Prerequisite Classes'],
+                    'grade_level': str(row.get('Grade Level', '')).strip(),
+                    'length': str(row.get('Length', '')).strip(),
+                    'essential_skills': str(row.get('Prerequisites', '')).strip(),
+                    'description': str(row.get('Description', '')).strip(),
+                    'work_outside_of_class': str(row.get('Work outside of Class', '')).strip(),
+                    'credits': row.get('Credits', 0.0),
+                    'section': str(row.get('Graduation', '')).strip(),
+                    'rop': str(row.get('ROP', '')).strip(),
+                    'school_site': str(row.get('School Site', '')).strip(),
+                    'concurrent': row.get('Concurrent Enrollment Classes'),
+                    'AP_honors': str(row.get('AP/Honors stat', '')).strip(),
+                    'course_name': str(row.get('Course Name', '')).strip(),
+                    'prerequisite_courses': row.get('Prerequisite Classes'),
                 }
             )
 

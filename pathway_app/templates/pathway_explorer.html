@@ -56,7 +56,7 @@
                       data-course-description="{{ course.description|default:'No description available.' }}"
                       data-course-skills="{{ course.essential_skills|default:'' }}"
                       data-course-grade="{{ course.grade_level|default:'' }}"
-                      class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left w-fit {% if course.course_number in all_student_courses %} bg-emerald-200 border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
+                      class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left w-fit {% if course.course_number in all_student_courses %} bg-emerald-200 text-success-content border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
                         Level {{ level }} — {{ course.course_name|default:course.course_number }}
                     </button>
                   {% endfor %}
@@ -72,7 +72,7 @@
                 data-course-description="{{ course.description|default:'No description available.' }}"
                 data-course-skills="{{ course.essential_skills|default:'' }}"
                 data-course-grade="{{ course.grade_level|default:'' }}"
-                class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left {% if course.course_number in all_student_courses %} bg-emerald-200 border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
+                class="inline-flex items-center px-6 py-2 rounded-xl bg-base-200 border border-base-300 text-xs font-semibold text-base-content hover:bg-base-300/50 hover:border-base-400 cursor-pointer transition-all text-left {% if course.course_number in all_student_courses %} bg-emerald-200 text-success-content border border-emerald-300 hover:bg-emerald-300/50 hover:border-emerald-400 {% endif %}">
                 Level {{ level }} — {{ course.course_name|default:course.course_number }}
               </button>
               {% endwith %}
@@ -125,7 +125,6 @@
   </form>
 </dialog>
 
-<!-- Pathway Image Preview Modal -->
 <dialog id="pathway_image_modal" class="modal">
   <div class="modal-box bg-base-100 max-w-2xl p-6 rounded-2xl border border-base-300 relative">
     <form method="dialog">
@@ -161,7 +160,6 @@
     document.getElementById('modal_course_name').textContent = name;
     document.getElementById('modal_course_description').textContent = description;
 
-    // Grade Level
     const gradeBadge = document.getElementById('modal_course_grade');
     if (grade && grade.trim() !== '') {
       gradeBadge.textContent = grade;
@@ -170,7 +168,6 @@
       gradeBadge.classList.add('hidden');
     }
 
-    // Essential Skills
     const skillsContainer = document.getElementById('modal_skills_container');
     const skillsElement = document.getElementById('modal_course_skills');
     if (skills && skills.trim() !== '') {

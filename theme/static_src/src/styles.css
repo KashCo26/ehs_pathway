@@ -9,22 +9,24 @@
   prefersdark: false;
   color-scheme: "light";
 
-  /* Warm off-white/cream background from the right panel */
+  /* Warm off-white background */
   --color-base-100: oklch(98% 0.01 90);
+  /* Year column cards background */
   --color-base-200: oklch(94% 0.015 90);
-  --color-base-300: oklch(88% 0.02 90);
+  /* Course box background sampled from your image */
+  --color-base-300: oklch(91.5% 0.012 85);
   --color-base-content: oklch(22% 0.04 260);
 
   --color-primary: oklch(60% 0.17 155);
   --color-primary-content: oklch(99% 0 0);
 
-  /* Dark Navy Blue sampled directly from the sidebar/footer card */
+  /* Dark Navy Blue */
   --color-neutral: oklch(20% 0.03 255);
   --color-neutral-content: oklch(95% 0.01 90);
 
-  --color-secondary: oklch(75% 0.05 155);
-  --color-secondary-content: oklch(15% 0.03 155);
-  --color-accent: oklch(60% 0.17 155);
+  --color-secondary: oklch(55% 0.18 255);
+  --color-secondary-content: oklch(99% 0 0);
+  --color-accent: oklch(55% 0.18 255);
   --color-accent-content: oklch(99% 0 0);
 
   --color-info: oklch(60% 0.15 240);
@@ -36,18 +38,54 @@
   --color-error: oklch(65% 0.2 25);
   --color-error-content: oklch(100% 0 0);
 
-  /* Soft, rounded borders matching the image layout */
   --radius-selector: 0.5rem;
   --radius-field: 0.5rem;
   --radius-box: 0.75rem;
   --border: 1px;
 }
 
-/**
-  * A catch-all path to Django template files, JavaScript, and Python files
-  * that contain Tailwind CSS classes and will be scanned by Tailwind to generate the final CSS file.
-  *
-  * If your final CSS file is not being updated after code changes, you may want to broaden or narrow
-  * the scope of this path.
-  */
+@plugin "daisyui/theme" {
+  name: "pathway-emerald-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+
+  /* Background (#131211) & Surface (#1c1e20) */
+  --color-base-100: #131211;
+  --color-base-200: #1c1e20;
+  /* Slightly lifted step from surface for nested course boxes */
+  --color-base-300: #26292c;
+  /* Text (#c8c8c6) */
+  --color-base-content: #c8c8c6;
+
+  /* Toned-down emerald primary */
+  --color-primary: #2bb673;
+  --color-primary-content: #ffffff;
+
+  /* Neutral surface & light text */
+  --color-neutral: #1c1e20;
+  --color-neutral-content: #c8c8c6;
+
+  /* Secondary (#2588e7) & Accent (#2d8fec) */
+  --color-secondary: #2588e7;
+  --color-secondary-content: #ffffff;
+  --color-accent: #2d8fec;
+  --color-accent-content: #ffffff;
+
+  /* Status colors */
+  --color-info: #2d8fec;
+  --color-info-content: #ffffff;
+  --color-success: #32c47d;
+  --color-success-content: #131211;
+  --color-warning: #bf9223;
+  --color-warning-content: #131211;
+  --color-error: #a71b1a;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --border: 1px;
+}
+
 @source "../../../**/*.{html,py,js}";

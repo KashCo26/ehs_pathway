@@ -19,6 +19,8 @@ class Course(models.Model):
     work_outside_of_class = models.TextField(blank=True, null=True)
     rop = models.TextField(blank=True, null=True)
     school_site = models.TextField(blank=True, null=True)
+    
+    # Add or verify this field exists:
     grad_year = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -164,28 +166,34 @@ class StudentProfile(models.Model):
         earned_credits = {key: 0.0 for key in requirements.keys()}
         course_nums = {key: [] for key in requirements.keys()}
         courses_detail = []
-
-        student_courses = StudentCourse.objects.filter(student=self, grade_level__gt = 8).select_related('course')
         ap_honors = 0
+
+        student_courses = StudentCourse.objects.filter(
+            models.Q(student=self) & (
+                models.Q(grade_level__gt=8) | 
+                models.Q(is_pre_hs=True) | 
+                models.Q(grade_level__lte=8, course__section__iexact='WORLD LANGUAGE')
+            )
+        ).distinct().select_related('course')
 
         for sc in student_courses:
             course = sc.course
-            sec = (course.section or 'ELECTIVE').strip().upper()
-            if sec == 'US HISTORY' or sec == 'CIVICS/ECONOMICS' or sec == 'WORLD HISTORY':
-                sec = 'A. HISTORY/SOCIAL SCIENCE'
-            elif sec == 'LIFE SCIENCE' or sec == 'PHYSICAL SCIENCE':
-                sec = 'D. LABORATORY SCIENCE'
-            elif sec == 'MATH':
-                sec = 'C. MATH'
-            elif sec == 'ENGLISH':
-                sec = 'B. ENGLISH'
-            elif sec == 'WORLD LANGUAGE':
-                sec = 'E. LANGUAGE OTHER THAN ENGLISH'
-            elif sec == 'VISUAL/PERFORMING ARTS':
-                sec = 'F. VISUAL AND PERFORMING ARTS'
-            elif sec == 'ELECTIVE':
-                sec = 'G. COLLEGE PREPARATORY ELECTIVE'
+            raw_sec = (course.section or 'ELECTIVE').strip().upper()
             
+            if raw_sec in ['US HISTORY', 'CIVICS/ECONOMICS', 'WORLD HISTORY']:
+                sec = 'A. HISTORY/SOCIAL SCIENCE'
+            elif raw_sec in ['LIFE SCIENCE', 'PHYSICAL SCIENCE']:
+                sec = 'D. LABORATORY SCIENCE'
+            elif raw_sec == 'MATH':
+                sec = 'C. MATH'
+            elif raw_sec == 'ENGLISH':
+                sec = 'B. ENGLISH'
+            elif raw_sec == 'WORLD LANGUAGE':
+                sec = 'E. LANGUAGE OTHER THAN ENGLISH'
+            elif raw_sec == 'VISUAL/PERFORMING ARTS':
+                sec = 'F. VISUAL AND PERFORMING ARTS'
+            else:
+                sec = 'G. COLLEGE PREPARATORY ELECTIVE'
             
             if course.AP_honors == "Yes":
                 ap_honors += 1
@@ -209,7 +217,7 @@ class StudentProfile(models.Model):
                     earned_credits[sec] += val
                     course_nums[sec].append(course.course_number)
                 else:
-                    if sec != 'ELECTIVE':
+                    if sec != 'G. COLLEGE PREPARATORY ELECTIVE':
                         overflow = (earned_credits[sec] + val) - requirements[sec]
                         earned_credits[sec] = requirements[sec]
                         earned_credits['G. COLLEGE PREPARATORY ELECTIVE'] += overflow
@@ -225,7 +233,6 @@ class StudentProfile(models.Model):
         minimized_credits = {cat: min(earned_credits[cat], req) for cat, req in requirements.items()}
         raw_total_earned = sum(minimized_credits.values())
         total_required = 150.0
-
         total_earned = min(raw_total_earned, total_required)
 
         return {
@@ -245,7 +252,6 @@ class StudentProfile(models.Model):
             'completed_courses': courses_detail,
             'total_ap_honors': ap_honors
         }
-
 
 class StudentCourse(models.Model):
     GRADE_LEVEL_CHOICES = [
