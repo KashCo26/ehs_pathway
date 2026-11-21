@@ -7,7 +7,7 @@
     <div class="text-center mb-6">
       <h2 class="text-2xl font-bold">Create Your Account</h2>
       <p class="text-sm text-base-content/70 mt-1">
-        Sign up to save your Dublin USD graduation plan across all your devices.
+        Sign up to save your graduation plan across all your devices.
       </p>
     </div>
 
@@ -25,7 +25,13 @@
           <label class="label py-1">
             <span class="label-text text-xs font-semibold">{{ field.label }}</span>
           </label>
-          <input class="input input-bordered w-full rounded-xl focus:outline-none focus:border-primary text-sm" type="{{ field.type }}" name="{{ field.name }}" id="{{ field.id_for_label }}" {% if field.value %}value="{{ field.value }}" {% endif %}>
+          
+          <input class="input input-bordered w-full rounded-xl focus:outline-none focus:border-primary text-sm" 
+                 type="{{ field.field.widget.input_type }}" 
+                 name="{{ field.name }}" 
+                 id="{{ field.id_for_label }}" 
+                 {% if field.value and field.field.widget.input_type != 'password' %}value="{{ field.value }}"{% endif %}>
+          
           {% if field.errors %}
             <label class="label py-0.5">
               <span class="label-text-alt text-error">{{ field.errors.0 }}</span>

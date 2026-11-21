@@ -14,4 +14,6 @@ urlpatterns = [
     path('a_to_g_credits/', views.a_to_g_credits_summary, name='a_to_g_credits'),
     path('pathway_explorer/', views.pathway_explorer, name='pathway_explorer'),
     path('academic_pathway_explorer/', views.academic_pathway_explorer, name='academic_pathway_explorer'),
+    path('settings/', views.settings_view, name='settings'),
+    path('glossary/', views.glossary_view, name='glossary'),
 ]

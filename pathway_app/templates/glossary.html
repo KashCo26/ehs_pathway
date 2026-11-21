@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-8 bg-base-100 text-base-content min-h-screen w-full">
+    
+    <!-- Page Header -->
+    <header class="mb-8">
+        <span class="text-[11px] font-bold uppercase tracking-widest text-primary">REFERENCE</span>
+        <h1 class="text-3xl font-serif font-bold text-base-content mt-1">Course Glossary & Abbreviations</h1>
+        <p class="text-xs opacity-70 mt-1">Quick guide to understanding course codes, program abbreviations, credit categories, and academic term definitions.</p>
+    </header>
+
+    <!-- Search & Filter Bar -->
+    <div class="flex gap-3 mb-6">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-40"></i>
+            <input 
+                type="text" 
+                id="glossarySearch" 
+                placeholder="Search abbreviations (e.g., AP, PLTW, A-G, ROP)..." 
+                class="input input-bordered w-full pl-9 rounded-xl bg-base-100 focus:outline-none focus:border-primary shadow-xs text-xs"
+                onkeyup="filterGlossary()"
+            >
+        </div>
+        <select 
+            id="categoryFilter" 
+            onchange="filterGlossary()" 
+            class="select select-bordered rounded-xl bg-base-100 focus:outline-none focus:border-primary shadow-xs text-xs cursor-pointer"
+        >
+            <option value="all">All Categories</option>
+            <option value="level">Course Levels & Rigor</option>
+            <option value="program">Programs & Pathway Acronyms</option>
+            <option value="requirement">Requirements & Requirement Types</option>
+            <option value="term">Academic Terms & Metrics</option>
+        </select>
+    </div>
+
+    <!-- Glossary Content Grid -->
+    <div class="space-y-6" id="glossaryContainer">
+
+        <!-- Section 1: Rigor & Level Codes -->
+        <div class="glossary-section space-y-3" data-category-group="level">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-primary border-b border-base-300 pb-2">
+                Course Rigor & Level Codes
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="ap advanced placement" data-category="level">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-primary text-[10px] font-bold">AP</span>
+                        <span class="text-[10px] font-mono opacity-50">Advanced Placement</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Advanced Placement</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">College-level courses curated by the College Board. Students can take AP exams in May to potentially earn college credit and extra GPA weighting.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="honors h" data-category="level">
+                    <div class="flex items-center justify-between">
+                        <span class="badge bg-secondary text-secondary-content text-[10px] font-bold">HONORS</span>
+                        <span class="text-[10px] font-mono opacity-50">Honors Level</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Honors Courses</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Accelerated high school curriculum designed for increased depth and analytical workload, preparing students for AP or dual enrollment coursework.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="ib international baccalaureate" data-category="level">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-accent text-accent-content text-[10px] font-bold">IB</span>
+                        <span class="text-[10px] font-mono opacity-50">International Baccalaureate</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">International Baccalaureate</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">A rigorous global curriculum divided into Standard Level (SL) and Higher Level (HL) courses emphasizing critical thinking and international context.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="cp college prep" data-category="level">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-ghost text-[10px] font-bold">CP</span>
+                        <span class="text-[10px] font-mono opacity-50">College Prep</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">College Preparatory</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Standard grade-level courses designed to meet basic high school graduation criteria and four-year university admission minimums.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 2: Special Programs -->
+        <div class="glossary-section space-y-3" data-category-group="program">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-primary border-b border-base-300 pb-2">
+                Special Programs & Pathway Acronyms
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="pltw project lead the way stem engineering biomed cs" data-category="program">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-outline border-primary text-primary text-[10px] font-bold">PLTW</span>
+                        <span class="text-[10px] font-mono opacity-50">Project Lead The Way</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Project Lead The Way</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Hands-on STEM elective tracks focusing on Engineering, Biomedical Science, and Computer Science with project-based learning.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="rop cte regional occupational program career technical education" data-category="program">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-outline border-secondary text-secondary text-[10px] font-bold">ROP / CTE</span>
+                        <span class="text-[10px] font-mono opacity-50">Career Tech Ed</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Regional Occupational Program</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Vocational and technical career-oriented courses offering real-world skills, industry certifications, and internships.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="de dual enrollment CC college credit" data-category="program">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-outline border-info text-info text-[10px] font-bold">DE / CC</span>
+                        <span class="text-[10px] font-mono opacity-50">Dual Enrollment</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Dual Enrollment / Concurrent Enrollment</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Courses taken through local community colleges where students earn both high school diploma credits and transferable college credits simultaneously.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="ta student assistant teacher assistant" data-category="program">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-ghost text-[10px] font-bold">TA / SA</span>
+                        <span class="text-[10px] font-mono opacity-50">Assistant Roles</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Teacher Assistant / Student Assistant</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Non-academic elective credit earned by assisting staff members or school departments with administrative and operational tasks.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 3: Requirements -->
+        <div class="glossary-section space-y-3" data-category-group="requirement">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-primary border-b border-base-300 pb-2">
+                Requirements & UC/CSU Eligibility
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="a-to-g a-g uc csu eligibility" data-category="requirement">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-primary text-[10px] font-bold">A-G</span>
+                        <span class="text-[10px] font-mono opacity-50">UC / CSU Track</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">A-to-G Subject Requirements</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">The 15 high school course requirements (A through G) mandatory for minimum freshman admission eligibility to the University of California (UC) and California State University (CSU) systems.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="pe physical education sports" data-category="requirement">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-ghost text-[10px] font-bold">PE</span>
+                        <span class="text-[10px] font-mono opacity-50">Physical Education</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Physical Education</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Required fitness credits. Athletic sports participation in 10th-12th grade may satisfy PE credit allocations depending on district guidelines.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="vpa visual performing arts art music theater" data-category="requirement">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-ghost text-[10px] font-bold">VAPA</span>
+                        <span class="text-[10px] font-mono opacity-50">Visual & Performing Arts</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Visual and Performing Arts</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Course category (A-G Category F) encompassing visual art, music, theater, dance, and media arts. Requires a full year sequence in a single discipline for UC eligibility.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="pre-hs middle school credit 8th grade" data-category="requirement">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-warning text-warning-content text-[10px] font-bold">PRE-HS</span>
+                        <span class="text-[10px] font-mono opacity-50">Pre-High School</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Middle School Accelerated Courses</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Courses like Algebra I or World Languages completed in middle school. Meets prerequisite levels and A-G subject tracking, but does not count towards high school graduation credit totals.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section 4: Academic Terms -->
+        <div class="glossary-section space-y-3" data-category-group="term">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-primary border-b border-base-300 pb-2">
+                Academic Terms & Prerequisite Conditions
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="prereq prerequisite" data-category="term">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-outline border-error text-error text-[10px] font-bold">PREREQ</span>
+                        <span class="text-[10px] font-mono opacity-50">Prior Required Course</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Prerequisite</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">A specific course or grade requirement that must be successfully completed BEFORE enrolling in a subsequent course.</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="coreq corequisite" data-category="term">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-outline border-info text-info text-[10px] font-bold">COREQ</span>
+                        <span class="text-[10px] font-mono opacity-50">Concurrent Enrollment</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Corequisite</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">A course that must be taken at the same time (concurrently) as another linked course (e.g., AP Physics lab paired with AP Physics theory).</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="gpa grade point average weighted unweighted" data-category="term">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-ghost text-[10px] font-bold">GPA</span>
+                        <span class="text-[10px] font-mono opacity-50">Grade Point Average</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">GPA (Weighted vs Unweighted)</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">Unweighted GPA scales up to 4.0. Weighted GPA awards extra quality points (+1.0 point for AP/Honors/IB courses, scaling up to 5.0).</p>
+                </div>
+
+                <div class="glossary-card p-4 rounded-2xl bg-base-100 border border-base-300 shadow-xs space-y-1" data-term="override dismiss prerequisite conflict" data-category="term">
+                    <div class="flex items-center justify-between">
+                        <span class="badge badge-warning text-warning-content text-[10px] font-bold">OVERRIDE</span>
+                        <span class="text-[10px] font-mono opacity-50">Prerequisite Bypass</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-base-content">Course Override</h3>
+                    <p class="text-xs opacity-70 leading-relaxed">An administrative bypass or user acknowledgement allowing course placement on a 4-year plan even if normal prerequisites or grade levels are unmet.</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Empty State -->
+    <div id="noGlossaryResults" class="hidden p-8 text-center opacity-70 bg-base-100 rounded-2xl border border-base-300 mt-6">
+        No matching abbreviations or terms found.
+    </div>
+
+    <!-- External Reference Banner -->
+    <div class="mt-10 p-5 rounded-2xl bg-base-200 border border-base-300 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-lg font-bold shrink-0">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-base-content">DUSD Course Catalog (2026-2027)</h3>
+                <p class="text-xs opacity-70">For full descriptions, graduation requirements, and detailed policy information, consult the official catalog.</p>
+            </div>
+        </div>
+        <a 
+            href="https://docs.google.com/document/d/1DxIYs_qW9sHB3rNxSrdz8QDy3Vp_lSKUbBSIYrFjigU/edit?tab=t.0" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="btn btn-primary btn-sm rounded-xl px-4 text-xs font-semibold shrink-0 gap-2"
+        >
+            <span>View Official Course Catalog</span>
+            <i class="fas fa-external-link-alt text-[10px]"></i>
+        </a>
+    </div>
+
+</div>
+
+<script>
+    function filterGlossary() {
+        const query = document.getElementById('glossarySearch').value.toLowerCase().trim();
+        const selectedCat = document.getElementById('categoryFilter').value;
+        const sections = document.querySelectorAll('.glossary-section');
+        const noResults = document.getElementById('noGlossaryResults');
+        let totalMatchCount = 0;
+
+        sections.forEach(section => {
+            let sectionMatchCount = 0;
+            const sectionCards = section.querySelectorAll('.glossary-card');
+            
+            sectionCards.forEach(card => {
+                const terms = (card.getAttribute('data-term') || '').toLowerCase();
+                const cardCat = card.getAttribute('data-category');
+
+                const matchesSearch = query === '' || terms.includes(query);
+                const matchesCategory = selectedCat === 'all' || selectedCat === cardCat;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                    sectionMatchCount++;
+                    totalMatchCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            section.style.display = sectionMatchCount > 0 ? 'block' : 'none';
+        });
+
+        if (totalMatchCount === 0) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+    }
+</script>
+{% endblock %}
