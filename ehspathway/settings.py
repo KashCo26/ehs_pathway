@@ -140,7 +140,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-<<<<<<< HEAD
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -148,8 +147,3 @@ STORAGES = {
 }
 
 NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
-=======
-NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
-
-STATIC_ROOT = BASE_DIR/'staticfiles'
->>>>>>> origin/main
